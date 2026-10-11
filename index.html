@@ -1,0 +1,1391 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>A Proposal for Margot</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;1,6..72,300&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   TOKENS
+   Rail colours live on each <template data-bg data-ink> below.
+   ============================================================ */
+:root{
+  --paper:#ffffff;
+  --ink:#101712;
+  --ink-soft:rgba(16,23,18,.62);
+  --rule:rgba(16,23,18,.16);
+  --rail-bg:#DCEDCD;
+  --rail-ink:#013B13;
+  --serif:'Newsreader', 'Times New Roman', serif;
+  --sans:'Inter', system-ui, sans-serif;
+  --ease:cubic-bezier(.22,1,.36,1);
+  --rail-w:33.6vw;
+  --pad:clamp(20px,4.4vw,64px);
+  --head-h:78px;
+  color-scheme:light;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+img{display:block;max-width:100%}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+a{color:inherit}
+::selection{background:var(--rail-bg);color:var(--rail-ink)}
+
+/* ---------- type ---------- */
+.display{font-family:var(--serif);font-weight:300;letter-spacing:-.02em;line-height:1.06}
+.h-xl{font-size:clamp(46px,7.4vw,124px)}
+.h-l{font-size:clamp(32px,3.4vw,52px)}
+.h-m{font-size:clamp(26px,2.4vw,38px)}
+.lede{font-family:var(--serif);font-weight:300;font-size:clamp(22px,2.15vw,34px);line-height:1.18;letter-spacing:-.012em}
+.kicker{font-size:12.5px;letter-spacing:.02em;color:var(--ink-soft)}
+.kicker + h2{margin-top:14px}
+.small{font-size:12.5px;line-height:1.7}
+.tbc{border-bottom:1px dotted currentColor;opacity:.75}
+
+/* ---------- split-line reveal (Fred's mask-up) ---------- */
+.ln{display:block;overflow:hidden;padding-bottom:.1em;margin-bottom:-.1em}
+.li{display:block;transform:translateY(112%);transition:transform 1.1s var(--ease);transition-delay:calc(var(--i,0) * 85ms + var(--d,0ms))}
+.in .li,.li.in{transform:none}
+[data-fade]{opacity:0;transform:translateY(22px);transition:opacity 1s var(--ease),transform 1.1s var(--ease);transition-delay:var(--d,0ms)}
+[data-fade].in{opacity:1;transform:none}
+
+/* ---------- header ---------- */
+.header{position:fixed;inset:0 0 auto 0;height:var(--head-h);z-index:50;display:flex;align-items:center;justify-content:space-between;padding:0 var(--pad);pointer-events:none;transition:transform .6s var(--ease)}
+.header>*{pointer-events:auto}
+.header.hide{transform:translateY(-100%)}
+.logo{display:block;width:46px;color:#fff;transition:color .9s var(--ease);--logo-fill:transparent}
+.logo svg{width:100%;height:auto;overflow:visible;display:block}
+.logo svg>*{transform-box:fill-box}
+.lg-line,.lg-blink path{fill:currentColor;transition:fill .9s var(--ease)}
+.lg-fill{fill:var(--logo-fill);transition:fill .9s var(--ease)}
+.logo svg{transform-origin:50% 100%;animation:pop .9s var(--ease) both}
+.lg-look{transition:transform .35s var(--ease)}
+.lg-blink{transform-origin:50% 50%;animation:blink 5.5s infinite}
+.logo:hover svg{animation:wobble .7s var(--ease)}
+.logo.hop svg{animation:hop .6s var(--ease)}
+@keyframes pop{0%{opacity:0;transform:scale(.6)}70%{opacity:1;transform:scale(1.04)}100%{opacity:1;transform:scale(1)}}
+@keyframes blink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes wobble{0%,100%{transform:rotate(0)}25%{transform:rotate(-7deg)}55%{transform:rotate(5deg)}80%{transform:rotate(-2deg)}}
+@keyframes hop{0%,100%{transform:translateY(0) scale(1)}30%{transform:translateY(0) scale(1.08,.9)}55%{transform:translateY(-7px) scale(.95,1.06)}80%{transform:translateY(0) scale(1.04,.96)}}
+.menu-btn{display:flex;align-items:center;gap:10px;font-size:13px;color:#fff;transition:color .6s}
+.menu-btn i{position:relative;width:11px;height:11px;display:inline-block}
+.menu-btn i::before,.menu-btn i::after{content:"";position:absolute;left:0;top:5px;width:11px;height:1px;background:currentColor;transition:transform .5s var(--ease)}
+.menu-btn i::after{transform:rotate(90deg)}
+.menu-btn:hover i::after{transform:rotate(0)}
+body.past-cover .logo{color:var(--rail-ink);--logo-fill:color-mix(in srgb,var(--rail-bg) 55%,#fff)}
+body.past-cover .menu-btn{color:var(--ink);background:var(--paper);padding:8px 14px;margin-right:-14px;border-radius:999px}
+
+/* ---------- cover ---------- */
+.cover{position:relative;height:100svh;min-height:600px;color:#fff;overflow:hidden;background:#0f1a12}
+.cover .img{position:absolute;inset:0;clip-path:none}
+.cover .img>*{transform:scale(1.12);transition:transform 2.4s var(--ease)}
+.cover.in .img>*{transform:scale(1)}
+.cover::after{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(0,0,0,.32) 0%,rgba(0,0,0,0) 20%,rgba(0,0,0,0) 42%,rgba(8,14,10,.5) 72%,rgba(8,14,10,.72) 100%);pointer-events:none}
+.cover-title,.cover-foot,.cover-crumb{text-shadow:0 1px 18px rgba(0,0,0,.25)}
+.cover-inner{position:absolute;inset:0;z-index:2;display:grid;grid-template-columns:var(--rail-w) 1fr;grid-template-rows:var(--head-h) 1fr auto}
+.cover-crumb{grid-column:1;grid-row:2;padding:6px var(--pad) 0;font-size:12px;opacity:.9}
+.cover-crumb span{text-decoration:underline;text-underline-offset:3px}
+.cover-title{grid-column:1 / -1;grid-row:2;align-self:end;padding:0 var(--pad) 40px}
+.cover-title p{max-width:540px;margin-top:22px;font-size:15px;opacity:.92}
+.cover-foot{grid-column:1 / -1;grid-row:3;display:grid;grid-template-columns:var(--rail-w) 1fr 1fr auto;border-top:1px solid rgba(255,255,255,.35);margin:0 var(--pad);padding:16px 0 26px;font-size:12px}
+.cover-foot>div{padding-right:20px}
+.cover-foot b{display:block;font-weight:500;opacity:.65;margin-bottom:2px}
+.scroll-cue{display:flex;align-items:center;gap:10px}
+.scroll-cue i{width:1px;height:28px;background:rgba(255,255,255,.35);position:relative;overflow:hidden}
+.scroll-cue i::after{content:"";position:absolute;inset:0;background:#fff;animation:cue 1.8s var(--ease) infinite}
+@keyframes cue{0%{transform:translateY(-100%)}60%,100%{transform:translateY(100%)}}
+
+/* ---------- deck layout: sticky rail + main ---------- */
+.deck{display:grid;grid-template-columns:var(--rail-w) 1fr;position:relative}
+.rail{position:sticky;top:0;align-self:start;height:100svh;background:var(--rail-bg);color:var(--rail-ink);transition:background-color .9s var(--ease),color .9s var(--ease);overflow:hidden;z-index:5}
+.rail-inner{position:absolute;inset:0;display:flex;flex-direction:column;padding:calc(var(--head-h) + 6px) var(--pad) 28px}
+.crumb{font-size:12px;opacity:.85}
+.crumb span{text-decoration:underline;text-underline-offset:3px}
+.rail-body{margin-top:auto;padding-bottom:28px}
+.rail-label{font-size:12.5px;opacity:.75;margin-bottom:18px;font-variant-numeric:tabular-nums}
+.rail-title{font-size:clamp(30px,2.6vw,42px);margin-bottom:18px}
+.rail-copy{font-size:13.5px;line-height:1.65;opacity:.82;max-width:410px}
+.rail-specs{margin-top:22px;border-top:1px solid currentColor;border-color:color-mix(in srgb,currentColor 22%,transparent);max-width:410px}
+.rail-specs div{display:grid;grid-template-columns:110px 1fr;gap:12px;padding:8px 0;border-bottom:1px solid color-mix(in srgb,currentColor 22%,transparent);font-size:12.5px}
+.rail-specs dt{opacity:.62}
+.rail-body.out .li{transform:translateY(-112%);transition-duration:.5s;transition-delay:calc(var(--i,0) * 30ms)}
+.rail-body.out [data-fade]{opacity:0;transform:translateY(-12px);transition-duration:.4s;transition-delay:0ms}
+
+.main{min-width:0;position:relative}
+.main::before{content:"";position:sticky;top:0;display:block;height:var(--head-h);margin-bottom:calc(var(--head-h) * -1);background:linear-gradient(var(--paper) 70%,transparent);z-index:4;pointer-events:none;opacity:0;transition:opacity .4s}
+.slide{position:relative}
+.block{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.62fr);gap:clamp(20px,3vw,48px);margin:0 var(--pad);padding:clamp(40px,5vw,72px) 0;border-top:1px solid var(--rule)}
+.block.first{border-top:0;padding-top:calc(var(--head-h) + 40px)}
+.block.full{grid-template-columns:1fr}
+.block .col-r{min-width:0}
+
+/* ---------- images / placeholders ---------- */
+.img{position:relative;overflow:hidden;background:color-mix(in srgb,var(--tint,#DCEDCD) 70%,#fff);clip-path:inset(100% 0 0 0);transition:clip-path 1.3s var(--ease)}
+.img.in{clip-path:inset(0 0 0 0)}
+.img>img,.img>.ph{width:100%;height:100%;object-fit:cover;transform:scale(1.14);transition:transform 1.8s var(--ease)}
+.img.in>img,.img.in>.ph{transform:scale(1)}
+.ph{display:flex;flex-direction:column;justify-content:flex-end;padding:18px;color:color-mix(in srgb,var(--tint-ink,#013B13) 85%,transparent);background:
+  radial-gradient(120% 90% at 20% 10%,rgba(255,255,255,.55),transparent 60%),
+  linear-gradient(160deg,color-mix(in srgb,var(--tint,#DCEDCD) 90%,#fff),color-mix(in srgb,var(--tint,#DCEDCD) 70%,#000 8%));font-size:11.5px;line-height:1.45}
+.ph::before{content:"";position:absolute;inset:0;opacity:.18;mix-blend-mode:multiply;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.ph b{font-family:var(--serif);font-weight:300;font-size:19px;line-height:1.2;margin-bottom:6px;position:relative}
+.ph code{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;opacity:.75;position:relative}
+.cover .ph{--tint:#2b3b2e;--tint-ink:#fff;color:rgba(255,255,255,.7);padding:calc(var(--head-h) + 20px) var(--pad);justify-content:flex-start;align-items:flex-end;text-align:right}
+.divider .img{height:100svh;clip-path:inset(0 0 0 100%)}
+.divider .img.in{clip-path:inset(0 0 0 0)}
+.divider .img>*{transform:translate3d(0,var(--py,0px),0) scale(1.12)}
+.divider .img.in>*{transform:translate3d(0,var(--py,0px),0) scale(1.06)}
+.divider .ph{justify-content:flex-start;align-items:flex-end;text-align:right;padding:calc(var(--head-h) + 24px) var(--pad)}
+.divider figcaption{position:absolute;left:var(--pad);bottom:22px;z-index:2;font-size:12px;color:#fff;text-shadow:0 1px 12px rgba(0,0,0,.55)}
+.divider .img:has(.ph) figcaption{color:var(--tint-ink);text-shadow:none}
+.pair{display:grid;grid-template-columns:1fr 1fr;gap:clamp(12px,1.6vw,24px)}
+.pair .img{aspect-ratio:4/3.1}
+.pair .img:nth-child(2){transition-delay:.12s}
+.pair .img:nth-child(2)>*{transition-delay:.12s}
+
+/* ---------- numbered list (Fred "1. Immersion") ---------- */
+.nums{list-style:none;counter-reset:n}
+.nums li{counter-increment:n;padding:0 0 26px}
+.nums h3{font-family:var(--serif);font-weight:300;font-size:clamp(22px,1.9vw,30px);letter-spacing:-.01em;line-height:1.15;margin-bottom:8px}
+.nums h3::before{content:counter(n) ". "}
+.nums p{color:var(--ink-soft);font-size:13.5px;max-width:520px}
+
+/* ---------- spec table (accommodation) ---------- */
+.spec{border-top:1px solid var(--rule)}
+.spec div{display:grid;grid-template-columns:minmax(120px,.42fr) 1fr;gap:16px;padding:14px 0;border-bottom:1px solid var(--rule);align-items:baseline}
+.spec dt{font-size:12.5px;color:var(--ink-soft)}
+a.ext{text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:4px;transition:opacity .3s}
+a.ext:hover{opacity:.6}
+.spec dd{font-family:var(--serif);font-weight:300;font-size:clamp(19px,1.55vw,24px);line-height:1.25}
+
+/* ---------- activities list (Fred's services switcher) ---------- */
+.acts-wrap{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.62fr);gap:clamp(20px,3vw,48px)}
+.act-list{list-style:none;position:relative;padding-left:16px}
+.act-list::before{content:"";position:absolute;left:0;top:0;bottom:0;width:1px;background:var(--rule)}
+.act-mark{position:absolute;left:0;top:0;width:2px;margin-left:-.5px;background:var(--ink);transition:transform .7s var(--ease),height .7s var(--ease)}
+.act-list button{display:block;text-align:left;width:100%;font-family:var(--serif);font-weight:300;font-size:clamp(21px,1.8vw,28px);line-height:1.2;letter-spacing:-.01em;padding:5px 0;color:rgba(16,23,18,.3);transition:color .5s var(--ease),transform .6s var(--ease)}
+.act-list button:hover{color:rgba(16,23,18,.6)}
+.act-list button.on{color:var(--ink);transform:translateX(6px)}
+.act-panels{position:relative;min-height:420px}
+.act-panel{position:absolute;inset:0 0 auto 0;opacity:0;visibility:hidden;transition:opacity .6s var(--ease),visibility 0s .6s}
+.act-panel.on{position:relative;opacity:1;visibility:visible;transition:opacity .8s var(--ease) .1s}
+.act-panel>p{font-size:14.5px;color:var(--ink-soft);max-width:520px;margin-bottom:18px;transform:translateY(14px);transition:transform .9s var(--ease) .1s}
+.act-panel.on>p{transform:none}
+.act-meta{display:flex;flex-wrap:wrap;gap:6px 28px;font-size:12px;margin-bottom:22px}
+.act-meta b{font-weight:500;color:var(--ink-soft);margin-right:6px}
+.dots{letter-spacing:2px}
+.credit{font-size:10.5px;color:var(--ink-soft);margin-top:8px}
+.credit a{color:inherit}
+.act-panel .img{aspect-ratio:16/10;clip-path:inset(0)}
+.act-panel .img>*{transform:scale(1.08);transition:transform 1.4s var(--ease)}
+.act-panel.on .img>*{transform:scale(1)}
+
+
+/* ---------- day rows (goodbyes) ---------- */
+.days{border-top:1px solid var(--rule)}
+.days div{display:grid;grid-template-columns:110px 1fr;gap:16px;padding:18px 0;border-bottom:1px solid var(--rule)}
+.days dt{font-size:12.5px;color:var(--ink-soft);font-variant-numeric:tabular-nums}
+.days dd h4{font-family:var(--serif);font-weight:300;font-size:24px;line-height:1.2}
+.days dd p{font-size:13px;color:var(--ink-soft);margin-top:4px}
+
+/* ---------- rates ---------- */
+.rates{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}
+.rates th{font-weight:400;font-size:12px;color:var(--ink-soft);text-align:left;padding:0 0 10px;border-bottom:1px solid var(--ink)}
+.rates td{padding:14px 0;border-bottom:1px solid var(--rule);font-size:13.5px;vertical-align:baseline}
+.rates td:first-child{font-family:var(--serif);font-weight:300;font-size:21px;padding-right:16px}
+.rates td:last-child,.rates th:last-child{text-align:right}
+.rates td.note{color:var(--ink-soft);font-size:12.5px}
+.rates tfoot td{border-bottom:0;border-top:1px solid var(--ink);font-weight:500}
+.rates tfoot td:first-child{font-size:28px}
+.rates tr.sub td{border-bottom:1px solid var(--ink);font-weight:500}
+.rates tr.sub td:first-child{font-weight:300}
+.rates tr.each td{border-top:0;font-weight:400;color:var(--ink-soft);padding-top:4px}
+.rates tr.each td:first-child{font-size:18px}
+.rates .num{display:inline-block;transition:opacity .25s,transform .35s var(--ease)}
+.rates .num.flip{opacity:0;transform:translateY(-6px)}
+.legs td:first-child{font-size:17px}
+.legs td{font-size:12.5px}
+.legs th,.legs td{padding-right:16px}
+.legs th:last-child,.legs td:last-child{padding-right:0}
+.ccy{position:relative;display:inline-flex;margin-top:22px;padding:3px;border:1px solid var(--rule);border-radius:999px;isolation:isolate}
+.ccy button{position:relative;z-index:1;padding:7px 16px;font-size:12px;font-weight:500;letter-spacing:.04em;color:var(--ink-soft);transition:color .35s}
+.ccy button[aria-pressed="true"]{color:#fff}
+.ccy i{position:absolute;z-index:0;top:3px;bottom:3px;left:3px;width:calc(50% - 3px);border-radius:999px;background:var(--ink);transition:transform .45s var(--ease)}
+.ccy.gbp i{transform:translateX(100%)}
+
+/* ---------- the ask ---------- */
+.stats{display:grid;grid-template-columns:repeat(5,1fr);border-top:1px solid var(--rule)}
+.stats div{padding:18px 16px 18px 0}
+.stats b{display:block;font-family:var(--serif);font-weight:300;font-size:clamp(40px,4.4vw,72px);line-height:1;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stats span{font-size:12px;color:var(--ink-soft)}
+.timeline{display:grid;grid-template-columns:repeat(17,1fr);gap:3px;margin-top:8px}
+.day{display:flex;flex-direction:column;gap:6px}
+.day i{display:block;height:84px;background:var(--c);transform:scaleY(0);transform-origin:bottom;transition:transform .9s var(--ease);transition-delay:calc(var(--n) * 45ms)}
+.day.gap i{background:repeating-linear-gradient(45deg,var(--rule) 0 2px,transparent 2px 7px);outline:1px dashed var(--rule);outline-offset:-1px}
+.timeline.in .day i{transform:none}
+.day small{font-size:10px;color:var(--ink-soft);text-align:center;font-variant-numeric:tabular-nums}
+.legend{display:flex;flex-wrap:wrap;gap:6px 18px;font-size:11.5px;color:var(--ink-soft);margin-top:14px}
+.legend span::before{content:"";display:inline-block;width:9px;height:9px;background:var(--c);margin-right:7px;vertical-align:-1px}
+.ask{position:relative;min-height:340px;display:flex;flex-direction:column;align-items:flex-start;gap:28px}
+.ask-btns{position:relative;width:100%;height:120px}
+.btn{position:absolute;top:0;display:inline-flex;align-items:center;justify-content:center;height:56px;padding:0 34px;border-radius:999px;font-size:14px;font-weight:500;letter-spacing:.01em;transition:transform .5s var(--ease),left .45s var(--ease),top .45s var(--ease),background .4s,color .4s}
+.btn-yes{left:0;background:var(--ink);color:#fff}
+.btn-yes:hover{transform:scale(1.05)}
+.btn-no{left:170px;border:1px solid var(--ink)}
+.fine{font-size:11.5px;color:var(--ink-soft);max-width:520px}
+.confetti{position:fixed;inset:0;pointer-events:none;z-index:80;overflow:hidden}
+.confetti i{position:absolute;top:-30px;width:0;height:0;border-left:8px solid transparent;border-right:8px solid transparent;border-bottom:14px solid var(--c);animation:fall var(--t) cubic-bezier(.3,.6,.4,1) forwards}
+@keyframes fall{to{transform:translate3d(var(--x),110vh,0) rotate(var(--r))}}
+
+/* ---------- menu overlay ---------- */
+.menu{position:fixed;inset:0;z-index:70;background:var(--rail-bg);color:var(--rail-ink);transform:translateY(-100%);transition:transform .9s var(--ease),background-color .9s;display:grid;grid-template-columns:var(--rail-w) 1fr;visibility:hidden}
+.menu.open{transform:none;visibility:visible}
+.menu-side{padding:calc(var(--head-h) + 6px) var(--pad) 32px;display:flex;flex-direction:column;justify-content:flex-end;font-size:13px;opacity:.85}
+.menu-list{list-style:none;padding:calc(var(--head-h) + 6px) var(--pad) 32px;display:flex;flex-direction:column;justify-content:center;border-left:1px solid color-mix(in srgb,currentColor 18%,transparent);overflow:auto}
+.menu-list a{display:grid;grid-template-columns:50px 1fr auto;align-items:baseline;gap:12px;padding:9px 0;border-bottom:1px solid color-mix(in srgb,currentColor 18%,transparent);text-decoration:none;font-family:var(--serif);font-weight:300;font-size:clamp(24px,2.7vw,42px);line-height:1.1;letter-spacing:-.015em;transition:padding .5s var(--ease)}
+.menu-list a:hover{padding-left:12px}
+.menu-list small{font-family:var(--sans);font-size:11.5px;opacity:.6;letter-spacing:0}
+.menu-close{position:absolute;top:0;right:var(--pad);height:var(--head-h);display:flex;align-items:center;gap:10px;font-size:13px}
+.menu .li{transition-delay:calc(var(--k,0) * 45ms + 250ms)}
+.menu:not(.open) .li{transform:translateY(112%);transition-delay:0ms;transition-duration:.3s}
+
+/* ---------- cursor orb ---------- */
+.cursor{position:fixed;left:0;top:0;width:12px;height:12px;margin:-6px 0 0 -6px;border-radius:50%;background:#fff;mix-blend-mode:difference;pointer-events:none;z-index:100;opacity:0;transition:opacity .3s,width .45s var(--ease),height .45s var(--ease),margin .45s var(--ease)}
+.cursor.on{opacity:1}
+.cursor.big{width:44px;height:44px;margin:-22px 0 0 -22px}
+@media (hover:none){.cursor{display:none}}
+
+
+/* ---------- the guide (vector redraw of Michael's backpacker) ---------- */
+.guide{position:absolute;z-index:6;width:var(--gw,170px);cursor:pointer;-webkit-tap-highlight-color:transparent}
+.guide svg{display:block;width:100%;height:auto;overflow:visible}
+.guide svg *{transform-box:view-box}
+.guide-pos{transition:transform .7s cubic-bezier(.34,1.45,.5,1)}
+.guide-bob{transform-origin:50% 100%;animation:bob 3.4s ease-in-out infinite}
+.guide.duck .guide-pos{transform:translateY(75%);transition:transform .35s var(--ease)}
+.guide.hidden .guide-pos{transform:translateY(115%)}
+.guide.jump .guide-bob{animation:jump .8s var(--ease) 2}
+/* parts */
+.g-headF{transform-origin:200px 268px;transition:transform .5s var(--ease)}
+.g-head{transform-origin:200px 268px;transition:transform .6s var(--ease)}
+.g-hair{transform-origin:200px 175px;animation:hair 3.4s ease-in-out infinite}
+.g-eyes{transition:transform .25s var(--ease)}
+.g-eyes circle{transform-box:fill-box;transform-origin:center;animation:blink 5.5s infinite}
+.g-mouth,.g-smile,.g-frown,.g-q,.g-wave{transition:opacity .25s}
+.g-smile,.g-frown,.g-q,.g-wave{opacity:0}
+.g-mapW{transform-origin:72px 410px;transition:transform .6s var(--ease)}
+.g-map{transform-origin:200px 480px;animation:mapIdle 4.6s ease-in-out infinite}
+.g-mapC{transform-origin:200px 396px;transition:transform .8s var(--ease)}
+.g-route{stroke-dasharray:9 9;animation:route 1.4s linear infinite}
+.g-fore{transform-origin:342px 300px}
+.g-armR,.g-handR{transition:opacity .2s}
+.g-q{transform-origin:286px 96px}
+/* states */
+.guide.waving .g-armR,.guide.waving .g-handR,.guide.waving .g-mouth{opacity:0}
+.guide.waving .g-wave,.guide.waving .g-smile{opacity:1}
+.guide.waving .g-fore{animation:wave .42s ease-in-out infinite alternate}
+.guide.waving .g-mapW{transform:rotate(7deg)}
+.guide.lost .g-head{transform:rotate(-9deg)}
+.guide.lost .g-mapC{transform:rotate(180deg)}
+.guide.lost .g-q{opacity:1;animation:qbob 1.6s ease-in-out infinite}
+.guide.shake .g-head{animation:headshake .6s var(--ease)}
+.guide.shake .g-mouth{opacity:0}.guide.shake .g-frown{opacity:1}
+.guide:hover .g-map{animation:rustle .5s var(--ease)}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+@keyframes hair{0%,100%{transform:scaleY(1)}50%{transform:scaleY(1.035)}}
+@keyframes mapIdle{0%,100%{transform:rotate(0)}35%{transform:rotate(-1.4deg)}70%{transform:rotate(1deg)}}
+@keyframes route{to{stroke-dashoffset:-36}}
+@keyframes wave{from{transform:rotate(-18deg)}to{transform:rotate(16deg)}}
+@keyframes qbob{0%,100%{transform:translateY(0) rotate(-8deg)}50%{transform:translateY(-8px) rotate(8deg)}}
+@keyframes rustle{0%,100%{transform:rotate(0)}20%{transform:rotate(-3deg) translateY(-4px)}50%{transform:rotate(2.5deg)}75%{transform:rotate(-1deg)}}
+@keyframes headshake{0%,100%{transform:rotate(0)}20%{transform:rotate(-9deg)}40%{transform:rotate(8deg)}60%{transform:rotate(-6deg)}80%{transform:rotate(3deg)}}
+@keyframes jump{0%,100%{transform:translateY(0) scale(1)}25%{transform:translateY(0) scale(1.05,.92)}50%{transform:translateY(-28px) scale(.96,1.05)}75%{transform:translateY(0) scale(1.03,.97)}}
+.bubble{position:absolute;z-index:2;max-width:220px;width:max-content;padding:9px 13px;background:#fff;color:#101712;font-size:12.5px;line-height:1.35;border-radius:14px 14px 14px 3px;box-shadow:0 6px 24px rgba(16,23,18,.12);opacity:0;transform:translateY(8px) scale(.92);transform-origin:0 100%;transition:opacity .35s var(--ease),transform .45s var(--ease);pointer-events:none}
+.bubble.on{opacity:1;transform:none}
+/* in the rail: peeks up from the bottom-right corner */
+.rail-guide{--gw:clamp(140px,11.5vw,180px);right:clamp(6px,1.4vw,26px);bottom:calc(var(--gw) * -.4)}
+.rail-body{padding-bottom:calc(clamp(140px,11.5vw,180px) * .95)}
+@media (max-height:800px) and (min-width:901px){.rail-guide{--gw:130px}.rail-body{padding-bottom:110px}}
+@media (max-height:720px) and (min-width:901px){
+  .rail-inner{padding-top:calc(var(--head-h) - 6px)}
+  .rail-title{font-size:clamp(24px,2vw,32px);margin-bottom:10px}
+  .rail-label{margin-bottom:10px}
+  .rail-copy{font-size:12.5px;line-height:1.55}
+  .rail-specs{margin-top:12px}
+  .rail-specs div{padding:5px 0;font-size:11.5px}
+  .rail-guide{--gw:104px;right:8px}
+  .rail-body{padding-bottom:78px}
+  .rail-guide .bubble{max-width:190px;font-size:11.5px}
+}
+@media (max-height:620px) and (min-width:901px){.rail-specs{display:none}}
+.rail-guide .bubble{right:84%;top:10%;border-radius:14px 14px 3px 14px;transform-origin:100% 100%}
+/* on the cover: he lives inside a round sticker */
+.cover-guide{--gw:176px;right:var(--pad);bottom:96px;z-index:3}
+.cover-guide .guide-clip{width:var(--gw);aspect-ratio:1;border-radius:50%;background:#F8EDE7;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,.25);transition:transform .7s cubic-bezier(.34,1.45,.5,1)}
+.cover-guide.hidden .guide-clip{transform:scale(0)}
+.cover-guide .guide-pos{width:72%;margin:5% auto 0}
+.cover-guide .bubble{right:92%;top:2%;border-radius:14px 14px 3px 14px;transform-origin:100% 100%}
+/* at the ask */
+.ask-guide{position:relative;--gw:min(230px,80%);margin-top:28px}
+.ask-guide .bubble{left:66%;top:-2%}
+@media (max-width:900px){
+  .rail-guide{display:none}
+  .rail-body{padding-bottom:0}
+  .cover-guide{--gw:96px;bottom:auto;top:calc(var(--head-h) + 70px)}
+  .cover-guide .bubble{right:100%;top:10%}
+  .ask-guide{--gw:140px;margin-top:16px}
+}
+
+/* ---------- mobile ---------- */
+.m-rail{display:none}
+@media (max-width:900px){
+  :root{--rail-w:100vw;--head-h:64px}
+  .deck{grid-template-columns:1fr}
+  .rail{position:sticky;top:0;height:auto;z-index:20}
+  .rail-inner{position:relative;padding:calc(var(--head-h) - 4px) var(--pad) 14px;flex-direction:row;align-items:baseline;gap:12px}
+  .rail .crumb,.rail-copy,.rail-specs{display:none}
+  .rail-body{margin:0;padding:0;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}
+  .rail-label{margin:0}
+  .rail-title{font-size:24px;margin:0}
+  .header{background:var(--rail-bg);transition:transform .6s var(--ease),background-color .9s var(--ease)}
+  body:not(.past-cover) .header{background:transparent}
+  .m-rail{display:block;background:var(--tint);color:var(--tint-ink);padding:28px var(--pad) 30px}
+  .m-rail .rail-copy,.m-rail .rail-specs{display:block}
+  .m-rail .rail-specs div{display:grid}
+  .m-rail .rail-label,.m-rail .rail-title{display:none}
+  .block,.acts-wrap{grid-template-columns:1fr}
+  .block.first{padding-top:44px}
+  .divider .img{height:72svh}
+  .cover-inner{grid-template-columns:1fr}
+  .cover-crumb{grid-row:2;align-self:start;padding-top:10px}
+  .cover-foot{grid-template-columns:1fr 1fr;row-gap:14px}
+  .scroll-cue{display:none}
+  .act-panels{min-height:0}
+  .stats{grid-template-columns:repeat(2,1fr)}
+  .timeline{gap:2px}.day i{height:56px}.day small{font-size:8.5px}
+  .menu{grid-template-columns:1fr}.menu-side{display:none}.menu-list{border:0}
+  .btn-no{left:150px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{transition-duration:.01ms!important;animation-duration:.01ms!important;transition-delay:0ms!important}
+}
+</style>
+</head>
+<body>
+
+<!-- =========================================================
+     HEADER
+     ========================================================= -->
+<header class="header" id="header">
+  <a class="logo" href="#top" aria-label="Back to the top">
+    <svg viewBox="160 172 412 512" aria-hidden="true">
+      <path class="lg-fill" d="M 397,195 L 407,200 L 418,210 L 424,218 L 431,232 L 436,258 L 436,288 L 433,303 L 424,324 L 416,337 L 405,351 L 387,368 L 386,370 L 387,377 L 390,380 L 394,381 L 408,381 L 431,366 L 449,351 L 472,335 L 490,327 L 505,323 L 520,323 L 532,328 L 543,339 L 548,351 L 548,364 L 544,373 L 537,381 L 526,389 L 501,402 L 426,429 L 421,435 L 422,441 L 428,447 L 436,451 L 447,452 L 453,446 L 465,447 L 485,455 L 495,462 L 504,471 L 514,487 L 519,504 L 519,514 L 517,520 L 511,527 L 507,528 L 493,525 L 458,512 L 430,498 L 415,486 L 407,485 L 402,490 L 402,507 L 403,508 L 405,537 L 407,547 L 408,569 L 409,570 L 409,592 L 410,593 L 410,602 L 414,607 L 420,607 L 426,601 L 430,599 L 440,597 L 447,597 L 448,596 L 456,596 L 457,595 L 468,595 L 483,601 L 489,608 L 489,618 L 483,626 L 479,628 L 459,630 L 456,632 L 456,634 L 452,638 L 404,637 L 403,636 L 395,636 L 389,631 L 386,617 L 386,604 L 385,603 L 384,571 L 383,570 L 383,555 L 382,554 L 382,536 L 381,535 L 381,520 L 380,519 L 380,501 L 377,497 L 371,496 L 363,504 L 359,505 L 353,513 L 324,600 L 316,632 L 316,637 L 314,645 L 312,648 L 305,652 L 299,653 L 292,656 L 265,662 L 244,663 L 243,662 L 232,662 L 224,660 L 218,657 L 214,653 L 213,649 L 219,642 L 234,635 L 253,631 L 271,631 L 272,632 L 277,632 L 288,639 L 295,638 L 303,623 L 313,592 L 321,559 L 325,534 L 327,530 L 329,520 L 331,517 L 331,510 L 325,504 L 320,504 L 317,506 L 314,510 L 314,516 L 308,524 L 296,530 L 284,538 L 242,572 L 225,583 L 216,587 L 207,589 L 200,589 L 193,586 L 188,581 L 185,575 L 184,560 L 188,547 L 199,530 L 218,511 L 228,503 L 244,493 L 258,486 L 272,481 L 276,476 L 276,469 L 271,464 L 254,463 L 238,460 L 222,453 L 214,447 L 203,435 L 197,425 L 192,410 L 193,395 L 199,385 L 210,376 L 224,369 L 246,364 L 265,364 L 287,370 L 296,376 L 306,389 L 314,390 L 319,385 L 319,379 L 314,371 L 313,362 L 304,345 L 300,331 L 299,318 L 298,317 L 298,304 L 299,303 L 299,292 L 300,291 L 301,280 L 310,251 L 319,233 L 328,219 L 336,210 L 350,199 L 358,195 L 368,192 L 387,192 Z"/>
+      <path class="lg-line" fill-rule="evenodd" d="M 402,185 L 387,181 L 368,181 L 356,184 L 347,188 L 336,195 L 328,202 L 316,217 L 300,248 L 294,267 L 290,286 L 289,322 L 293,343 L 297,352 L 296,356 L 291,356 L 279,352 L 266,351 L 265,350 L 248,350 L 247,351 L 240,351 L 230,353 L 218,357 L 200,367 L 187,379 L 182,388 L 179,400 L 180,415 L 183,425 L 192,443 L 200,453 L 209,461 L 224,470 L 241,475 L 243,477 L 243,479 L 228,488 L 208,503 L 190,522 L 180,537 L 176,546 L 173,557 L 173,575 L 175,581 L 181,591 L 189,597 L 198,600 L 210,600 L 226,595 L 241,586 L 264,567 L 305,537 L 308,537 L 310,539 L 303,578 L 296,605 L 288,624 L 281,624 L 274,622 L 248,622 L 228,627 L 214,634 L 206,642 L 204,647 L 204,653 L 207,659 L 211,663 L 220,668 L 232,671 L 266,671 L 290,666 L 311,659 L 325,657 L 328,652 L 331,632 L 342,592 L 362,537 L 365,534 L 367,535 L 368,538 L 370,575 L 371,576 L 373,613 L 374,614 L 374,631 L 371,640 L 373,645 L 376,648 L 381,650 L 463,651 L 464,652 L 479,653 L 490,657 L 496,657 L 500,652 L 500,646 L 498,643 L 496,642 L 483,643 L 481,641 L 495,629 L 499,623 L 501,616 L 501,610 L 499,602 L 496,597 L 489,590 L 479,585 L 471,583 L 443,583 L 428,586 L 423,582 L 421,544 L 420,543 L 420,528 L 419,527 L 419,512 L 420,511 L 425,511 L 462,527 L 487,535 L 497,536 L 498,537 L 513,537 L 520,533 L 527,521 L 529,505 L 526,491 L 519,475 L 508,461 L 492,449 L 481,444 L 463,439 L 456,435 L 458,433 L 485,423 L 498,416 L 500,416 L 533,399 L 542,392 L 551,382 L 557,371 L 558,367 L 558,350 L 553,336 L 549,330 L 539,320 L 530,315 L 523,313 L 510,313 L 509,314 L 501,314 L 492,316 L 468,326 L 442,344 L 417,364 L 415,362 L 431,338 L 441,317 L 447,292 L 448,264 L 447,263 L 447,253 L 443,233 L 436,216 L 431,208 L 420,196 L 412,190 Z M 397,195 L 407,200 L 418,210 L 424,218 L 431,232 L 436,258 L 436,288 L 433,303 L 424,324 L 416,337 L 405,351 L 387,368 L 386,370 L 387,377 L 390,380 L 394,381 L 408,381 L 431,366 L 449,351 L 472,335 L 490,327 L 505,323 L 520,323 L 532,328 L 543,339 L 548,351 L 548,364 L 544,373 L 537,381 L 526,389 L 501,402 L 426,429 L 421,435 L 422,441 L 428,447 L 436,451 L 447,452 L 453,446 L 465,447 L 485,455 L 495,462 L 504,471 L 514,487 L 519,504 L 519,514 L 517,520 L 511,527 L 507,528 L 493,525 L 458,512 L 430,498 L 415,486 L 407,485 L 402,490 L 402,507 L 403,508 L 405,537 L 407,547 L 408,569 L 409,570 L 409,592 L 410,593 L 410,602 L 414,607 L 420,607 L 426,601 L 430,599 L 440,597 L 447,597 L 448,596 L 456,596 L 457,595 L 468,595 L 483,601 L 489,608 L 489,618 L 483,626 L 479,628 L 459,630 L 456,632 L 456,634 L 452,638 L 404,637 L 403,636 L 395,636 L 389,631 L 386,617 L 386,604 L 385,603 L 384,571 L 383,570 L 383,555 L 382,554 L 382,536 L 381,535 L 381,520 L 380,519 L 380,501 L 377,497 L 371,496 L 363,504 L 359,505 L 353,513 L 324,600 L 316,632 L 316,637 L 314,645 L 312,648 L 305,652 L 299,653 L 292,656 L 265,662 L 244,663 L 243,662 L 232,662 L 224,660 L 218,657 L 214,653 L 213,649 L 219,642 L 234,635 L 253,631 L 271,631 L 272,632 L 277,632 L 288,639 L 295,638 L 303,623 L 313,592 L 321,559 L 325,534 L 327,530 L 329,520 L 331,517 L 331,510 L 325,504 L 320,504 L 317,506 L 314,510 L 314,516 L 308,524 L 296,530 L 284,538 L 242,572 L 225,583 L 216,587 L 207,589 L 200,589 L 193,586 L 188,581 L 185,575 L 184,560 L 188,547 L 199,530 L 218,511 L 228,503 L 244,493 L 258,486 L 272,481 L 276,476 L 276,469 L 271,464 L 254,463 L 238,460 L 222,453 L 214,447 L 203,435 L 197,425 L 192,410 L 193,395 L 199,385 L 210,376 L 224,369 L 246,364 L 265,364 L 287,370 L 296,376 L 306,389 L 314,390 L 319,385 L 319,379 L 314,371 L 313,362 L 304,345 L 300,331 L 299,318 L 298,317 L 298,304 L 299,303 L 299,292 L 300,291 L 301,280 L 310,251 L 319,233 L 328,219 L 336,210 L 350,199 L 358,195 L 368,192 L 387,192 Z"/>
+      <g class="lg-look"><g class="lg-blink"><path d="M 334,389 L 329,392 L 328,395 L 329,441 L 330,444 L 333,447 L 337,448 L 340,447 L 343,444 L 343,402 L 344,401 L 344,395 L 340,390 Z"/><path d="M 363,387 L 360,388 L 357,392 L 357,407 L 358,408 L 359,429 L 360,430 L 361,441 L 363,445 L 366,447 L 371,447 L 375,444 L 376,440 L 375,439 L 375,432 L 373,423 L 372,392 L 369,388 Z"/></g></g>
+    </svg>
+  </a>
+  <button class="menu-btn" id="menuBtn" aria-expanded="false" aria-controls="menu">Menu <i></i></button>
+</header>
+
+<!-- =========================================================
+     MENU OVERLAY
+     ========================================================= -->
+<nav class="menu" id="menu" aria-label="Sections">
+  <div class="menu-side">
+    <p>A Proposal for Margot<br>20 December – 5 January<br>Prepared by Management, for the Board.</p>
+  </div>
+  <ol class="menu-list" id="menuList"></ol>
+  <button class="menu-close" id="menuClose">Close <i style="font-style:normal">×</i></button>
+</nav>
+
+<!-- =========================================================
+     01  COVER
+     ========================================================= -->
+<section class="cover" id="top">
+  <figure class="img" data-src="images/01-cover.webp" data-hint="Lion's Head above the beach, Cape Town"></figure>
+  <div class="cover-inner">
+    <p class="cover-crumb" data-fade style="--d:300ms">Home / Proposals / <span>Margot</span></p>
+    <div class="cover-title">
+      <h1 class="display h-xl" data-split style="--d:350ms">A Proposal for Margot.</h1>
+      <p data-fade style="--d:900ms">Seventeen days, four beds, one very long drive. Prepared for the Board (Margot) by Management (me), with a straight face and a fully costed budget. Mostly.</p>
+    </div>
+    <div class="guide cover-guide hidden" id="coverGuide"></div>
+    <div class="cover-foot" data-fade style="--d:1100ms">
+      <div><b>Dates</b>20.12 — 05.01</div>
+      <div><b>Under canvas</b>Roughly 70%</div>
+      <div><b>Board approval</b>Pending review</div>
+      <div class="scroll-cue">Scroll to be convinced <i></i></div>
+    </div>
+  </div>
+</section>
+
+<!-- =========================================================
+     DECK  (sticky rail + scrolling main)
+     ========================================================= -->
+<div class="deck">
+
+  <aside class="rail" id="rail" aria-live="polite">
+    <div class="rail-inner">
+      <p class="crumb">Proposal / <span id="crumbNow">Tent</span></p>
+      <div class="rail-body" id="railBody"></div>
+      <div class="guide rail-guide hidden" id="railGuide"></div>
+    </div>
+  </aside>
+
+  <main class="main">
+
+    <!-- ===================== 02  TENT ===================== -->
+    <section class="slide divider" id="tent" data-rail="tent">
+      <div class="m-rail" data-from="tent"></div>
+      <figure class="img" data-src="images/02-tent.webp" data-hint="Two camp chairs, a fire and a cooler on a rocky beach"><figcaption>Fig. 1 — The office.</figcaption></figure>
+    </section>
+    <section class="slide" data-rail="tent">
+      <div class="block">
+        <p class="kicker" data-fade>What we're proposing</p>
+        <p class="lede col-r" data-split>Christmas in the bush, Boxing Day on the Wild Coast, New Year on a Karoo wine farm, and a drive long enough that we run out of things to say somewhere near Swellendam and resort to car games.</p>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>The four pillars</p>
+        <ol class="nums col-r">
+          <li data-fade><h3>Sleep outside.</h3><p>Under canvas, mostly. The tents have proper beds. That's the entire difference between glamping and camping, and I'm paying for every inch of it.</p></li>
+          <li data-fade><h3>Eat like it's Christmas, because it is.</h3><p>Braai, mince pies, whatever the lodge is serving. I'll cook at least once. You'll say it's nice. We'll both know. That's teamwork.</p></li>
+          <li data-fade><h3>Swim in something wild.</h3><p>Ocean, river, dam. If it's wet and there's no lifeguard, it counts.</p></li>
+          <li data-fade><h3>Come back with stories.</h3><p>At least three we can tell in public. The rest stay in the Karoo, where they belong.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- ===================== 03  CAPE TOWN (divider) ===================== -->
+    <section class="slide divider" id="cape-town" data-rail="capetown">
+      <div class="m-rail" data-from="capetown"></div>
+      <figure class="img" data-src="images/03-cape-town.webp" data-pos="40% 50%" data-hint="Camps Bay and the Twelve Apostles at sunset"><figcaption>Fig. 2 — Arrivals.</figcaption></figure>
+    </section>
+
+    <!-- 04  CAPE TOWN · accommodation -->
+    <section class="slide" data-rail="capetown">
+      <div class="block">
+        <div><p class="kicker" data-fade>Accommodation</p><h2 class="display h-l" data-split style="--d:80ms">Where we sleep</h2></div>
+        <p class="lede col-r" data-split>A soft launch at my place in Tamboerskloof. A shower that works, a bed that doesn't fold, and Table Mountain off the deck. You don't even have to lean.</p>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>The details</p>
+        <dl class="spec col-r" data-fade>
+          <div><dt>Property</dt><dd>Mi casa</dd></div>
+          <div><dt>Where</dt><dd>Tamboerskloof, Cape Town</dd></div>
+          <div><dt>Type</dt><dd>Best spot in town</dd></div>
+          <div><dt>Check-in</dt><dd>Sunday, 20 December</dd></div>
+          <div><dt>Check-out</dt><dd>Wednesday, 23 December</dd></div>
+          <div><dt>Nights</dt><dd>3</dd></div>
+          <div><dt>Room</dt><dd>Sharing with a blonde muppet</dd></div>
+          <div><dt>From the airport</dt><dd><span class="tbc">[~25 min]</span></dd></div>
+        </dl>
+      </div>
+      <div class="block full">
+        <div class="pair">
+          <figure class="img" data-src="images/04-ct-stay-1.webp" data-hint="The view from the deck: Table Mountain, doing its thing"></figure>
+          <figure class="img" data-src="images/04-ct-stay-2.webp" data-hint="The bed. Illustrated, for legal reasons."></figure>
+        </div>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>Why here</p>
+        <ol class="nums col-r">
+          <li data-fade><h3>Jet lag recovery.</h3><p>Three days to become a person again before eleven hours in a car with me, which honestly should come with a waiver.</p></li>
+          <li data-fade><h3>Close to everything.</h3><p>Kloof Street for coffee, Lion's Head for sunrise, and the whole city bowl on foot. The commute is the stairs.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 05  CAPE TOWN · activities -->
+    <section class="slide" data-rail="capetown">
+      <div class="block">
+        <div><p class="kicker" data-fade>Activities</p><h2 class="display h-l" data-split style="--d:80ms">What we do</h2></div>
+        <p class="lede col-r" data-split>Three items on the agenda, no alarms, and a Board that has already approved all of them in principle.</p>
+      </div>
+      <div class="block full">
+        <div class="acts-wrap" data-acts>
+          <ul class="act-list">
+            <li><button>Lie on the beach</button></li>
+            <li><button>Publik, round two</button></li>
+            <li><button>Chaos &amp; giggles</button></li>
+          </ul>
+          <div class="act-panels">
+            <div class="act-panel"><p>Take it easy. Towel, sunscreen, absolutely nothing else in the calendar. If anyone asks, we're recovering from travel. You flew. I'm recovering in solidarity.</p><div class="act-meta"><span><b>When</b>Whenever we wake up</span><span><b>Effort</b><span class="dots">○○○</span></span><span><b>Cost</b>Sunscreen</span></div><figure class="img" data-src="images/05-ct-act-1.webp" data-pos="50% 62%" data-hint="Clifton. Horizontal. Ideally us."></figure></div>
+            <div class="act-panel"><p>Back to Publik for more wine and food, because I owe you a round and I always pay my debts. Eventually. With interest, in the form of a second bottle.</p><div class="act-meta"><span><b>When</b><span class="tbc">[Night 1 or 2]</span></span><span><b>Effort</b><span class="dots">●○○</span> (lifting the glass)</span><span><b>Cost</b>One round. Mine.</span></div><figure class="img" data-src="images/05-ct-act-2.webp" data-pos="100% 50%" data-hint="Publik. Please order at the bar. I will. It's my round."></figure></div>
+            <div class="act-panel"><p>Unscheduled, unsupervised and frankly unexplainable to anyone else. If you have to ask, you weren't there. If you were there, you're still not allowed to explain it.</p><div class="act-meta"><span><b>When</b>Throughout</span><span><b>Effort</b><span class="dots">●●●</span></span><span><b>Cost</b>Our dignity</span></div><figure class="img" data-src="images/05-ct-act-3.webp" data-hint="Us, after the chaos. Dressed for a Cape Town summer, apparently."></figure></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 06  HUNTSHOEK (divider) ===================== -->
+    <section class="slide divider" id="huntshoek" data-rail="huntshoek">
+      <div class="m-rail" data-from="huntshoek"></div>
+      <figure class="img" data-src="images/06-huntshoek.webp" data-hint="Huntshoek divider: the bush, the valley, a thatched roof"><figcaption>Fig. 3 — Christmas, but make it bushveld.</figcaption></figure>
+    </section>
+
+    <!-- 07  HUNTSHOEK · accommodation -->
+    <section class="slide" data-rail="huntshoek">
+      <div class="block">
+        <div><p class="kicker" data-fade>Accommodation</p><h2 class="display h-l" data-split style="--d:80ms">Where we sleep</h2></div>
+        <p class="lede col-r" data-split>A tent above the Great Fish River. Private deck, our own kitchen, a gas braai, and a pool a short walk away for the part of Christmas where nobody wants to move. It's a tent with a kitchen. So, a flat, but with more spiders and a better view.</p>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>The details</p>
+        <dl class="spec col-r" data-fade>
+          <div><dt>Property</dt><dd>Huntshoek Lodge, <a class="ext" href="https://huntshoeklodge.com/huntshoek-lodge/stay-at-huntshoek/tented-experience/" target="_blank" rel="noopener">Tented Experience ↗</a></dd></div>
+          <div><dt>Where</dt><dd>Near Makhanda (Grahamstown), Eastern Cape</dd></div>
+          <div><dt>Check-in</dt><dd>Wednesday, 23 December</dd></div>
+          <div><dt>Check-out</dt><dd>Saturday, 26 December</dd></div>
+          <div><dt>Nights</dt><dd>3</dd></div>
+          <div><dt>Room</dt><dd>Hornbill <span class="tbc">(probably)</span>. A one-bedroom tent: en-suite, private deck, sleeps two.</dd></div>
+          <div><dt>Meals</dt><dd>Self-catering. Kitchenette and gas braai. I cook, you pretend it's nice.</dd></div>
+          <div><dt>Rate</dt><dd>R3 900 for the stay</dd></div>
+          <div><dt>Wi-Fi</dt><dd>Limited. Thank God.</dd></div>
+        </dl>
+      </div>
+      <div class="block full">
+        <div class="pair">
+          <figure class="img" data-src="images/07-hh-stay-1.webp" data-hint="Hornbill: the tent and its deck"></figure>
+          <figure class="img" data-src="images/07-hh-stay-2.webp" data-hint="Hornbill: the view from the deck"></figure>
+        </div>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>Why here</p>
+        <ol class="nums col-r">
+          <li data-fade><h3>Christmas somewhere quiet.</h3><p>No malls, no carols on loop, no relatives asking about your five-year plan. Just the bush, and whatever the bush is saying at 3am.</p></li>
+          <li data-fade><h3>It's on the way.</h3><p>Most of the way to the Wild Coast, which makes it both a holiday and good logistics. I'm very proud of this.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 08  HUNTSHOEK · activities -->
+    <section class="slide" data-rail="huntshoek">
+      <div class="block">
+        <div><p class="kicker" data-fade>Activities</p><h2 class="display h-l" data-split style="--d:80ms">What we do</h2></div>
+        <p class="lede col-r" data-split>Mostly sitting. Occasionally sitting in a vehicle while looking at an animal.</p>
+      </div>
+      <div class="block full">
+        <div class="acts-wrap" data-acts>
+          <ul class="act-list">
+            <li><button>Game drive</button></li>
+            <li><button>Fishing the Great Fish</button></li>
+            <li><button>Christmas Day</button></li>
+            <li><button>The pool</button></li>
+            <li><button>Birding, badly</button></li>
+          </ul>
+          <div class="act-panels">
+            <div class="act-panel"><p>Still a maybe, but let's cook. Booked through the lodge, up before the sun, one antelope spotted and discussed for the rest of the trip. I'll be the one whispering "look" at a bush.</p><div class="act-meta"><span><b>When</b><span class="tbc">[Maybe. 24 Dec, dawn]</span></span><span><b>Effort</b><span class="dots">●○○</span></span><span><b>Cost</b><span class="tbc">[R —]</span></span></div><figure class="img" data-src="images/08-hh-act-1.webp" data-hint="Nyala. Exhibit A of the one antelope we'll talk about for days."></figure></div>
+            <div class="act-panel"><p>Freshwater fishing. Catch and release. Mostly release. Releasing is the bit I'm good at.</p><div class="act-meta"><span><b>When</b><span class="tbc">[Any afternoon]</span></span><span><b>Effort</b><span class="dots">●○○</span></span><span><b>Cost</b><span class="tbc">[R —]</span></span></div><figure class="img" data-src="images/08-hh-act-2.webp" data-hint="Casting into the Great Fish River"></figure></div>
+            <div class="act-panel"><p>Christmas lunch on our own braai. No snow, no chimney, nobody quietly judging the store-bought trifle. I'll still bring a store-bought trifle. Tradition is tradition.</p><div class="act-meta"><span><b>When</b>25 December</span><span><b>Effort</b><span class="dots">●●●</span> (digestive)</span><span><b>Cost</b><span class="tbc">[R —]</span></span></div><figure class="img" data-src="images/08-hh-act-3.webp" data-hint="The braai, with something festive being poured"></figure></div>
+            <div class="act-panel"><p>Float. Look at the valley. Ignore every group chat currently asking where we are.</p><div class="act-meta"><span><b>When</b>Constantly</span><span><b>Effort</b><span class="dots">○○○</span></span><span><b>Cost</b>Included</span></div><figure class="img" data-src="images/08-hh-act-4.webp" data-hint="The pool. Infinity, apparently. Like my tab at Publik."></figure></div>
+            <div class="act-panel"><p>One rule: every bird you get the wrong species for, you buy the other person a drink. I'm calling everything a lark. I'm going to be broke, and honestly, I'm at peace with that.</p><div class="act-meta"><span><b>When</b><span class="tbc">[Early]</span></span><span><b>Effort</b><span class="dots">●○○</span></span><span><b>Cost</b>One drink per wrong bird</span></div><figure class="img" data-src="images/08-hh-act-5.webp" data-pos="50% 22%" data-hint="Species pending. Drinks may be owed."></figure></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 09  MDUMBI (divider) ===================== -->
+    <section class="slide divider" id="mdumbi" data-rail="mdumbi">
+      <div class="m-rail" data-from="mdumbi"></div>
+      <figure class="img" data-src="images/09-mdumbi.webp" data-hint="Mdumbi divider: green hills falling into the sea"><figcaption>Fig. 4 — The Wild Coast, which is not a metaphor.</figcaption></figure>
+    </section>
+
+    <!-- 10  MDUMBI · accommodation -->
+    <section class="slide" data-rail="mdumbi">
+      <div class="block">
+        <div><p class="kicker" data-fade>Accommodation</p><h2 class="display h-l" data-split style="--d:80ms">Where we sleep</h2></div>
+        <p class="lede col-r" data-split>A backpackers on the Wild Coast. Barefoot, salty, and quite possibly the best three nights of the trip. Don't tell Huntshoek.</p>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>The details</p>
+        <dl class="spec col-r" data-fade>
+          <div><dt>Property</dt><dd>Mdumbi Backpackers, <a class="ext" href="https://mdumbi.co.za/rooms-rates/" target="_blank" rel="noopener">Safari Tent Twin ↗</a></dd></div>
+          <div><dt>Where</dt><dd>Wild Coast, Eastern Cape</dd></div>
+          <div><dt>Check-in</dt><dd>Saturday, 26 December</dd></div>
+          <div><dt>Check-out</dt><dd>Tuesday, 29 December</dd></div>
+          <div><dt>Nights</dt><dd>3</dd></div>
+          <div><dt>Room</dt><dd>Safari Tent Twin, ocean view. More privacy than the dorms, canvas walls that hear everything. Snoring will be disclosed in advance.</dd></div>
+          <div><dt>Rate</dt><dd>R565 pp per night, so R3 390 for the stay</dd></div>
+          <div><dt>Signal</dt><dd>Intermittent, as a lifestyle</dd></div>
+        </dl>
+      </div>
+      <div class="block full">
+        <div class="pair">
+          <figure class="img" data-src="images/10-md-stay-1.webp" data-hint="The Safari Tent. Ocean view. Canvas walls."></figure>
+          <figure class="img" data-src="images/10-md-stay-2.webp" data-hint="The communal deck, looking at the sea"></figure>
+        </div>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>Why here</p>
+        <ol class="nums col-r">
+          <li data-fade><h3>Boxing Day by the ocean.</h3><p>Swap the leftover ham for the Indian Ocean. It's a fair trade.</p></li>
+          <li data-fade><h3>Nobody's on their phone.</h3><p>Not out of choice. There just isn't any signal.</p></li>
+        </ol>
+      </div>
+    </section>
+
+    <!-- 11  MDUMBI · activities -->
+    <section class="slide" data-rail="mdumbi">
+      <div class="block">
+        <div><p class="kicker" data-fade>Activities</p><h2 class="display h-l" data-split style="--d:80ms">What we do</h2></div>
+        <p class="lede col-r" data-split>The ocean is the activity. Everything else is just a way of getting to it or back from it.</p>
+      </div>
+      <div class="block full">
+        <div class="acts-wrap" data-acts>
+          <ul class="act-list">
+            <li><button>Surf lesson</button></li>
+            <li><button>Coastal walk</button></li>
+            <li><button>Community walk</button></li>
+            <li><button>Sunset on the point</button></li>
+            <li><button>Absolutely nothing</button></li>
+          </ul>
+          <div class="act-panels">
+            <div class="act-panel"><p>Mdumbi's point break is famous with surfers. We'll be famous with the instructors, for different reasons.</p><div class="act-meta"><span><b>When</b><span class="tbc">[27 Dec]</span></span><span><b>Effort</b><span class="dots">●●●</span></span><span><b>Cost</b><span class="tbc">[R —]</span></span></div><figure class="img" data-src="images/11-md-act-1.webp" data-hint="The point. Someone who can actually surf, for reference."></figure></div>
+            <div class="act-panel"><p>Green hills, cliffs and cows on the beach. The Wild Coast doesn't do subtle.</p><div class="act-meta"><span><b>When</b><span class="tbc">[Morning]</span></span><span><b>Effort</b><span class="dots">●●○</span></span><span><b>Cost</b>Free</span></div><figure class="img" data-src="images/11-md-act-2.webp" data-hint="Green hills, ocean, the long way round"></figure></div>
+            <div class="act-panel"><p>Meeting the people who live here, done respectfully and with someone who actually knows the place.</p><div class="act-meta"><span><b>Guide</b><span class="tbc">[Local guide TBC]</span></span><span><b>Effort</b><span class="dots">●○○</span></span><span><b>Cost</b><span class="tbc">[R —]</span></span></div><figure class="img" data-src="images/11-md-act-3.webp" data-hint="A walk with people who know the place"></figure></div>
+            <div class="act-panel"><p>Something cold, the sun dropping into the sea, and me saying "this is the life" with zero irony. You'll roll your eyes. You'll also agree.</p><div class="act-meta"><span><b>When</b>Every evening</span><span><b>Effort</b><span class="dots">○○○</span></span><span><b>Cost</b>Beers</span></div><figure class="img" data-src="images/11-md-act-4.webp" data-hint="Sunset over the Wild Coast"></figure></div>
+            <div class="act-panel"><p>Hammock, book, nap, repeat. It's a legitimate activity and I won't be taking questions.</p><div class="act-meta"><span><b>When</b>Whenever</span><span><b>Effort</b><span class="dots">○○○</span></span><span><b>Cost</b>Free</span></div><figure class="img" data-src="images/11-md-act-5.webp" data-hint="Professional sitting, cliffside"></figure></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 12  THE KAROO (divider) ===================== -->
+    <section class="slide divider" id="tbc" data-rail="tbc">
+      <div class="m-rail" data-from="tbc"></div>
+      <figure class="img" data-src="images/12-karoo.webp" data-hint="Farm cottages, orchards and mountains: the Karoo from above"><figcaption>Fig. 5 — The Karoo. Found.</figcaption></figure>
+    </section>
+
+    <!-- 13  THE KAROO · accommodation -->
+    <section class="slide" data-rail="tbc">
+      <div class="block">
+        <div><p class="kicker" data-fade>Accommodation</p><h2 class="display h-l" data-split style="--d:80ms">Where we sleep</h2></div>
+        <p class="lede col-r" data-split>Found it. Hobbie, a self-catering unit on a wine farm outside De Rust. Four nights, New Year's Eve included, and a farm that makes its own wine, which feels like a sign. Management would like it minuted that "exploring options" worked.</p>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>The details</p>
+        <dl class="spec col-r" data-fade>
+          <div><dt>Property</dt><dd>Hobbie at <a class="ext" href="https://doornkraal.co.za/accommodation/" target="_blank" rel="noopener">Domein Doornkraal ↗</a></dd></div>
+          <div><dt>Room</dt><dd>One four-poster double, private bathroom with a walk-in shower, veranda and braai. Electric blanket included, in case the Karoo gets ideas.</dd></div>
+          <div><dt>Type</dt><dd>Self-catering. I cook, again. You've been warned, again.</dd></div>
+          <div><dt>Where</dt><dd>A working wine farm near De Rust, Klein Karoo</dd></div>
+          <div><dt>Check-in</dt><dd>Tuesday, 29 December</dd></div>
+          <div><dt>Check-out</dt><dd>Saturday, 2 January</dd></div>
+          <div><dt>Nights</dt><dd>4, including New Year's Eve</dd></div>
+          <div><dt>Rate</dt><dd>R1 440 a night, so R5 760 for the stay</dd></div>
+          <div><dt>Deposit</dt><dd>R2 880. Half up front. Even wine farms have trust issues.</dd></div>
+        </dl>
+      </div>
+      <div class="block full">
+        <div class="pair">
+          <figure class="img" data-src="images/13-karoo-stay-1.webp" data-hint="Hobbie: the four-poster"></figure>
+          <figure class="img" data-src="images/13-karoo-stay-2.webp" data-hint="Hobbie: the living room, blue cupboard and all"></figure>
+        </div>
+      </div>
+    </section>
+
+    <!-- 13b  THE KAROO · activities -->
+    <section class="slide" data-rail="tbc">
+      <div class="block">
+        <div><p class="kicker" data-fade>Activities</p><h2 class="display h-l" data-split style="--d:80ms">What we do</h2></div>
+        <p class="lede col-r" data-split>A wine farm, a mountain range and New Year's Eve. The plan more or less writes itself, which is good, because I wasn't going to.</p>
+      </div>
+      <div class="block full">
+        <div class="acts-wrap" data-acts>
+          <ul class="act-list">
+            <li><button>New Year's on a wine farm</button></li>
+            <li><button>New Year's Day, slowly</button></li>
+            <li><button>Hike the Swartberg</button></li>
+            <li><button>The Meiringspoort loop</button></li>
+            <li><button>The farm stall</button></li>
+          </ul>
+          <div class="act-panels">
+            <div class="act-panel"><p>We're spending New Year's Eve on a wine farm. Not near one. On one. They make their own bubbly, it's called Tickled Pink, and I'm going to say that name with a straight face at midnight. Fireworks optional. Bubbles mandatory.</p><div class="act-meta"><span><b>When</b>31 December</span><span><b>Effort</b><span class="dots">●○○</span></span><span><b>Cost</b>Their wine, our problem</span></div><figure class="img" data-src="images/13b-karoo-act-1.webp" data-hint="Doornkraal wine, the reason we're here"></figure></div>
+            <div class="act-panel"><p>Order the farm's own pasture-raised lamb braai basket, light the fire, and quietly review last night's decisions. Most of them were good. One of them was the second bottle.</p><div class="act-meta"><span><b>When</b>1 January</span><span><b>Effort</b><span class="dots">○○○</span></span><span><b>Cost</b><span class="tbc">[Lamb basket R —]</span></span></div><figure class="img" data-src="images/13b-karoo-act-2.webp" data-hint="A long, slow farm lunch"></figure></div>
+            <div class="act-panel"><p>Proper hiking in the Swartberg. CapeNature's Ou Tol Circular is 7.4 km, about three hours. Platberg is 8.4 km, about four. Both need a permit. It's the Karoo in summer, so we start at dawn or we start dying. <a class="ext" href="https://www.capenature.co.za/uploads/files/Info-Sheet-Day-Visitors-Swartberg-2026.pdf" target="_blank" rel="noopener">Trail info ↗</a></p><div class="act-meta"><span><b>When</b><span class="tbc">[Early. Very early.]</span></span><span><b>Effort</b><span class="dots">●●●</span></span><span><b>Cost</b><span class="tbc">[Permits R —]</span></span></div><figure class="img" data-src="images/13b-karoo-act-4.webp" data-hint="Up in the Swartberg, looking down at the pass"></figure><p class="credit">Photo: Andrawaag, CC0, via Wikimedia Commons</p></div>
+            <div class="act-panel"><p>The classic loop. Through Meiringspoort, with a short walk to the waterfall from the SANParks rest stop about 13 km out of De Rust. Lunch in Prince Albert. Then home over the Swartberg Pass: 20 km of gravel and opinions. I'll drive. You'll grip the door.</p><div class="act-meta"><span><b>When</b><span class="tbc">[TBC]</span></span><span><b>Effort</b><span class="dots">●●○</span></span><span><b>Cost</b>Fuel and pies</span></div><figure class="img" data-src="images/13b-karoo-act-5.webp" data-pos="50% 40%" data-hint="Meiringspoort waterfall"></figure><p class="credit">Photo: <a href="https://commons.wikimedia.org/wiki/File:MeiringspoortFalls.jpg" target="_blank" rel="noopener">Martinvl</a>, CC BY-SA 4.0, via Wikimedia Commons</p></div>
+            <div class="act-panel"><p>Doornkraal's own padstal. Wine, seventy-year-old farm vinegar, fig jam, and the people who made all of it. We'll go in for one bottle. We will not leave with one bottle.</p><div class="act-meta"><span><b>When</b>Any day</span><span><b>Effort</b><span class="dots">○○○</span></span><span><b>Cost</b>More than planned</span></div><figure class="img" data-src="images/13b-karoo-act-6.webp" data-hint="The Doornkraal padstal"></figure></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 14  BACK TO CAPE TOWN (divider) ===================== -->
+    <section class="slide divider" id="back" data-rail="back">
+      <div class="m-rail" data-from="back"></div>
+      <figure class="img" data-src="images/14-back-to-cape-town.webp" data-pos="52% 50%" data-hint="Table Mountain from Blouberg. Home."><figcaption>Fig. 6 — The return leg.</figcaption></figure>
+    </section>
+
+    <!-- ===================== 15  FINAL GOODBYES (divider) ===================== -->
+    <section class="slide divider" id="goodbyes" data-rail="goodbyes">
+      <div class="m-rail" data-from="goodbyes"></div>
+      <figure class="img" data-src="images/15-goodbyes.webp" data-pos="55% 50%" data-hint="Management, the week after, handling it well"><figcaption>Fig. 7 — Me on 6 January. Handling it well. Fully operational.</figcaption></figure>
+    </section>
+
+    <!-- ===================== RATES ===================== -->
+    <!-- Every money figure is a data-zar value; JS renders ZAR or GBP and does the sums.
+         Fuel = (route km + local km) x L/100km x R/litre, all set on #fuel below. -->
+    <section class="slide" id="rates" data-rail="rates">
+      <div class="m-rail" data-from="rates"></div>
+      <div class="block first">
+        <div>
+          <p class="kicker" data-fade>Rates</p><h2 class="display h-l" data-split style="--d:80ms">The rate card</h2>
+          <div class="ccy" role="group" aria-label="Currency" data-fade style="--d:200ms">
+            <button data-ccy="ZAR" aria-pressed="true">ZAR</button><button data-ccy="GBP" aria-pressed="false">GBP</button><i></i>
+          </div>
+        </div>
+        <p class="lede col-r" data-split>Beds and petrol. That's the whole budget. Food, wine and questionable padstal purchases are a matter for another committee.</p>
+      </div>
+      <div class="block full" data-fade>
+        <table class="rates" id="rateCard">
+          <thead><tr><th>Line item</th><th>Unit</th><th>Note</th><th>Rate</th></tr></thead>
+          <tbody>
+            <tr><td>Cape Town</td><td>6 nights</td><td class="note">Mi casa, Tamboerskloof. 20–23 Dec and 2–5 Jan</td><td data-zar="0" data-free="Free. You're welcome."></td></tr>
+            <tr><td>Huntshoek Lodge</td><td>3 nights</td><td class="note">Tented Experience, self-catering</td><td data-zar="3900"></td></tr>
+            <tr><td>Mdumbi Backpackers</td><td>3 nights</td><td class="note">Safari Tent Twin, R565 pp per night</td><td data-zar="3390"></td></tr>
+            <tr><td>The Karoo</td><td>4 nights</td><td class="note">Hobbie at Domein Doornkraal, R1 440 a night</td><td data-zar="5760"></td></tr>
+            <tr class="sub"><td>Accommodation</td><td>16 nights</td><td class="note"></td><td data-sum="stay"></td></tr>
+            <tr><td>Petrol</td><td data-km></td><td class="note" id="fuelNote"></td><td id="fuelCost"></td></tr>
+          </tbody>
+          <tfoot>
+            <tr><td>Total</td><td></td><td class="note">Beds and fuel only</td><td id="grandTotal"></td></tr>
+            <tr class="each"><td>Each</td><td></td><td class="note">Split down the middle, like adults</td><td id="eachTotal"></td></tr>
+          </tfoot>
+        </table>
+      </div>
+      <div class="block">
+        <p class="kicker" data-fade>The fuel maths</p>
+        <div class="col-r" data-fade>
+          <table class="rates legs" id="fuel" data-lper100="13" data-price="29.80">
+            <thead><tr><th>Leg</th><th>Distance</th><th>Drive</th><th>Fuel</th></tr></thead>
+            <tbody>
+              <tr data-km="927"><td>Cape Town → Huntshoek</td><td>927 km</td><td>~11 h</td><td></td></tr>
+              <tr data-km="362"><td>Huntshoek → Mdumbi</td><td>362 km</td><td>~6 h</td><td></td></tr>
+              <tr data-km="894"><td>Mdumbi → De Rust</td><td>894 km</td><td>~12 h</td><td></td></tr>
+              <tr data-km="457"><td>De Rust → Cape Town</td><td>457 km</td><td>~6 h</td><td></td></tr>
+              <tr data-km="400"><td>Pottering about</td><td>~400 km</td><td>Beach runs, Meiringspoort loop, padstal detours</td><td></td></tr>
+            </tbody>
+          </table>
+          <p class="fine" style="margin-top:14px">2015 Jeep Wrangler, 3.6 V6 petrol, at a real-world 13 L/100 km. The brochure says better. The brochure has never driven it with a roof box. Petrol at R29.80 a litre, the October 2026 average of coastal (R29.38) and inland (R30.25) 95. December's price is anyone's guess. Pounds at R21.90 to £1. Distances from route planning, rounded.</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== 16  THE ASK ===================== -->
+    <section class="slide" id="yes" data-rail="yes">
+      <div class="m-rail" data-from="yes"></div>
+      <div class="block first">
+        <div><p class="kicker" data-fade>The whole trip</p><h2 class="display h-l" data-split style="--d:80ms">At a glance</h2></div>
+        <p class="lede col-r" data-split>Two provinces, three beds that aren't mine, one Christmas, one New Year, and at least one argument about the aircon.</p>
+      </div>
+      <div class="block full">
+        <div class="stats" data-fade>
+          <div><b data-count="17">0</b><span>Days</span></div>
+          <div><b data-count="16">0</b><span>Nights</span></div>
+          <div><b data-count="5">0</b><span>Stops</span></div>
+          <div><b data-count="70" data-suffix="%">0</b><span>Under canvas (ish)</span></div>
+          <div><b data-count="1">0</b><span>Question</span></div>
+        </div>
+      </div>
+      <div class="block full">
+        <div>
+          <p class="kicker" data-fade style="margin-bottom:14px">Where you sleep, night by night</p>
+          <div class="timeline" id="timeline"></div>
+          <div class="legend" id="legend"></div>
+        </div>
+      </div>
+      <div class="block">
+        <div><p class="kicker" data-fade>The ask</p><div class="guide ask-guide" id="askGuide"></div></div>
+        <div class="ask col-r">
+          <h2 class="display" style="font-size:clamp(44px,5.4vw,88px)" data-split>So… do you say yes?</h2>
+          <div class="ask-btns" id="askBtns">
+            <button class="btn btn-yes" id="yesBtn">Yes</button>
+            <button class="btn btn-no" id="noBtn">No</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="cursor" id="cursor" aria-hidden="true"></div>
+
+<!-- =========================================================
+     RAIL CONTENT — one template per stop.
+     data-bg / data-ink = the sidebar colours for that stop.
+     data-short = name used in the menu.
+     ========================================================= -->
+<template id="rail-tent" data-bg="#DCEDCD" data-ink="#013B13" data-short="Tent" data-num="00" data-dates="The summary">
+  <p class="rail-label" data-fade>00 — Tent</p>
+  <h2 class="rail-title display" data-split>The executive summary, but it sleeps outside.</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">You land on the 20th of December and fly out on the 5th of January. About 70% of those nights are in a tent. A nice tent, with a bed in it, which legally makes it a hotel room with commitment issues. There's Christmas in the bush, New Year on a wine farm in the Karoo, and more than enough time in a car to settle every argument about the music. I'll lose most of them and claim victory anyway.</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>Duration</dt><dd>17 days</dd></div>
+    <div><dt>Glamping</dt><dd>~70%, the rest is "real" beds</dd></div>
+    <div><dt>Provinces</dt><dd>Western Cape, Eastern Cape</dd></div>
+    <div><dt>Wi-Fi</dt><dd>Emotionally unavailable</dd></div>
+    <div><dt>Planning</dt><dd>Meticulous (ish)</dd></div>
+  </dl>
+</template>
+
+<template id="rail-capetown" data-bg="#CDD1FD" data-ink="#1D2160" data-short="Cape Town" data-num="01" data-dates="20–23 Dec">
+  <p class="rail-label" data-fade>01 — Cape Town</p>
+  <h2 class="rail-title display" data-split>Cape Town</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">You land, you adjust, and you pretend the wind is "refreshing". Three days in Tamboerskloof to shake off the jet lag before we point the car east and pretend the long drive was about the scenery.</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>Dates</dt><dd>20 – 23 December</dd></div>
+    <div><dt>Nights</dt><dd>3</dd></div>
+    <div><dt>Base</dt><dd>My apartment, Tamboerskloof</dd></div>
+    <div><dt>Vibe</dt><dd>Soft launch</dd></div>
+  </dl>
+</template>
+
+<template id="rail-huntshoek" data-bg="#EED6AA" data-ink="#4A2C0C" data-short="Huntshoek" data-num="02" data-dates="23–26 Dec">
+  <p class="rail-label" data-fade>02 — Huntshoek Lodge</p>
+  <h2 class="rail-title display" data-split>Huntshoek Lodge</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">Christmas in a tent above the Great Fish River outside Makhanda. Our own kitchen, a gas braai, and night sounds you'll swear are a leopard. They're not. Probably. Christmas in a remote tent: every feel-good film starts this way. So does every true-crime podcast.</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>Dates</dt><dd>23 – 26 December</dd></div>
+    <div><dt>Nights</dt><dd>3</dd></div>
+    <div><dt>Where</dt><dd>Near Makhanda, Eastern Cape</dd></div>
+    <div><dt>Sleeping</dt><dd>Under canvas</dd></div>
+    <div><dt>The drive</dt><dd>927 km, about 11 hours from Cape Town</dd></div>
+    <div><dt>Christmas</dt><dd>Yes, here</dd></div>
+  </dl>
+</template>
+
+<template id="rail-mdumbi" data-bg="#BFE2DB" data-ink="#0B3A37" data-short="Mdumbi" data-num="03" data-dates="26–29 Dec">
+  <p class="rail-label" data-fade>03 — Mdumbi</p>
+  <h2 class="rail-title display" data-split>Mdumbi Backpackers</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">The Wild Coast. Green hills dropping straight into the Indian Ocean, and a point break I'll watch from the beach while calling it "not really working today".</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>Dates</dt><dd>26 – 29 December</dd></div>
+    <div><dt>Nights</dt><dd>3</dd></div>
+    <div><dt>Where</dt><dd>Wild Coast, Eastern Cape</dd></div>
+    <div><dt>Sleeping</dt><dd>Under canvas, ocean view</dd></div>
+    <div><dt>Signal</dt><dd>Intermittent</dd></div>
+  </dl>
+</template>
+
+<template id="rail-tbc" data-bg="#F5CFC2" data-ink="#5A1D12" data-short="The Karoo" data-num="04" data-dates="29 Dec–2 Jan">
+  <p class="rail-label" data-fade>04 — The Karoo</p>
+  <h2 class="rail-title display" data-split>The Karoo</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">New Year's Eve on a wine farm in the Klein Karoo. Not a wine bar. Not a wine region. A wine farm, the kind where you can see where the bottle came from. It was "to be found" for a while. Then it was found. Honestly, my best work.</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>Dates</dt><dd>29 December – 2 January</dd></div>
+    <div><dt>Nights</dt><dd>4</dd></div>
+    <div><dt>Where</dt><dd>Hobbie, Domein Doornkraal, near De Rust</dd></div>
+    <div><dt>Sleeping</dt><dd>Self-catering</dd></div>
+    <div><dt>Status</dt><dd>Found. Finally.</dd></div>
+    <div><dt>NYE venue</dt><dd>A vineyard</dd></div>
+  </dl>
+</template>
+
+<template id="rail-back" data-bg="#CDD1FD" data-ink="#1D2160" data-short="Back to CPT" data-num="05" data-dates="2 Jan">
+  <p class="rail-label" data-fade>05 — Back to Cape Town</p>
+  <h2 class="rail-title display" data-split>Back to Cape Town</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">The long drive home: about 455 km and five hours of us deciding whose turn it is to pick the music. It's mine. It's always mine. Sunburnt, a bit feral, and with at least one in-joke nobody else will ever understand. People will ask how the trip was. We'll say "it's a long story" and then tell them the long story.</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>Dates</dt><dd>2 – 5 January</dd></div>
+    <div><dt>Nights</dt><dd>3</dd></div>
+    <div><dt>The drive</dt><dd>About 455 km, roughly 5 hours from De Rust. Longer with padstal stops, and there will be padstal stops.</dd></div>
+    <div><dt>Base</dt><dd>Mi casa, again</dd></div>
+    <div><dt>Mood</dt><dd>Post-holiday denial</dd></div>
+  </dl>
+</template>
+
+<template id="rail-goodbyes" data-bg="#B9BEF5" data-ink="#171A52" data-short="Goodbyes" data-num="06" data-dates="2–5 Jan">
+  <p class="rail-label" data-fade>06 — Final Goodbyes</p>
+  <h2 class="rail-title display" data-split>Final goodbyes</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">Bonus time in the Cape: three more days to do everything we said we'd do on day one and didn't. Management negotiated an extension. You're welcome. Then Departures, where I'll be fine. Completely fine. It's the wind. Indoors.</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>2 January</dt><dd>Arrive back, collapse</dd></div>
+    <div><dt>3 January</dt><dd><span class="tbc">[Plan TBC]</span></dd></div>
+    <div><dt>4 January</dt><dd><span class="tbc">[Last full day: plan TBC]</span></dd></div>
+    <div><dt>5 January</dt><dd>Airport. <span class="tbc">[Flight time]</span></dd></div>
+  </dl>
+</template>
+
+<template id="rail-rates" data-bg="#ECE9E1" data-ink="#101712" data-short="Rates" data-num="07" data-dates="The numbers">
+  <p class="rail-label" data-fade>07 — Rates</p>
+  <h2 class="rail-title display" data-split>The numbers</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">Every good pitch has a slide where the mood changes. This is that slide. Beds and petrol only, and there's a pounds button, because the Board is based in London and we respect the Board.</p>
+</template>
+
+<template id="rail-yes" data-bg="#013B13" data-ink="#DCEDCD" data-short="The ask" data-num="08" data-dates="Now">
+  <p class="rail-label" data-fade>08 — The Ask</p>
+  <h2 class="rail-title display" data-split>The closing argument</h2>
+  <p class="rail-copy" data-fade style="--d:200ms">I know how this looks. Someone has built you a sixteen-section website with a colour-coded timeline and is asking you a yes-or-no question. Yes, it's a proposal. No, not that kind. Just click the button.</p>
+  <dl class="rail-specs" data-fade style="--d:300ms">
+    <div><dt>Commitment</dt><dd>17 days</dd></div>
+    <div><dt>Ring</dt><dd>Not in this deck</dd></div>
+    <div><dt>Tent</dt><dd>Yes</dd></div>
+    <div><dt>Snacks</dt><dd>Provided</dd></div>
+  </dl>
+</template>
+
+<script>
+(() => {
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const esc = s => s.replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+  /* ---------- split text into masked lines ---------- */
+  function split(el) {
+    if (!el.dataset.text) el.dataset.text = el.textContent.trim().replace(/\s+/g, ' ');
+    const words = el.dataset.text.split(' ');
+    el.innerHTML = words.map(w => `<span class="w">${esc(w)}</span>`).join(' ');
+    const lines = []; let cur = [], top = null;
+    el.querySelectorAll('.w').forEach(w => {
+      const t = w.offsetTop;
+      if (top !== null && Math.abs(t - top) > 3) { lines.push(cur); cur = []; }
+      top = t; cur.push(w.textContent);
+    });
+    if (cur.length) lines.push(cur);
+    el.innerHTML = lines.map((l, i) => `<span class="ln"><span class="li" style="--i:${i}">${l.map(esc).join(' ')}</span></span>`).join('');
+  }
+  const splitAll = (root = document) => $$('[data-split]', root).forEach(split);
+
+  /* ---------- images: try the real file, fall back to a labelled placeholder ---------- */
+  function hydrateImg(fig) {
+    const src = fig.dataset.src, hint = fig.dataset.hint || '';
+    const img = new Image();
+    img.alt = hint; img.decoding = 'async';
+    if (fig.dataset.pos) img.style.objectPosition = fig.dataset.pos;
+    img.onload = () => fig.prepend(img);
+    img.onerror = () => {
+      const ph = document.createElement('div');
+      ph.className = 'ph';
+      ph.innerHTML = `<b>${esc(hint)}</b><code>${esc(src)}</code>`;
+      fig.prepend(ph);
+    };
+    img.src = src;
+  }
+
+  /* ---------- rail templates ---------- */
+  const tpl = id => document.getElementById('rail-' + id);
+  const order = $$('template[id^="rail-"]').map(t => t.id.slice(5));
+  const firstSection = id => $(`.slide[data-rail="${id}"]`);
+
+  // tint every section's placeholders + mobile rail with its stop colour
+  $$('.slide[data-rail]').forEach(s => {
+    const t = tpl(s.dataset.rail);
+    s.style.setProperty('--tint', t.dataset.bg);
+    s.style.setProperty('--tint-ink', t.dataset.ink);
+  });
+  $$('.m-rail').forEach(m => m.append(tpl(m.dataset.from).content.cloneNode(true)));
+
+  // menu
+  const menuList = $('#menuList');
+  order.forEach((id, k) => {
+    const t = tpl(id);
+    const mi = document.createElement('li');
+    mi.innerHTML = `<a href="#" data-go="${id}"><small>${t.dataset.num}</small><span class="ln"><span class="li" style="--k:${k}">${esc(t.dataset.short)}</span></span><small>${esc(t.dataset.dates)}</small></a>`;
+    menuList.append(mi);
+  });
+  document.addEventListener('click', e => {
+    const go = e.target.closest('[data-go]');
+    if (!go) return;
+    e.preventDefault();
+    closeMenu();
+    firstSection(go.dataset.go).scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' });
+  });
+
+  const logo = $('.logo'), look = $('.lg-look');
+  logo.addEventListener('animationend', () => logo.classList.remove('hop'));
+  const root = document.documentElement, railBody = $('#railBody'), crumb = $('#crumbNow');
+  let current = null, swapTimer;
+  function setRail(id, instant) {
+    if (id === current) return;
+    current = id;
+    const t = tpl(id);
+    root.style.setProperty('--rail-bg', t.dataset.bg);
+    root.style.setProperty('--rail-ink', t.dataset.ink);
+    if (!instant) { logo.classList.remove('hop'); void logo.offsetWidth; logo.classList.add('hop'); }
+    crumb.textContent = t.dataset.short;
+    guideOnStop(id);
+    clearTimeout(swapTimer);
+    const fill = () => {
+      railBody.classList.remove('out');
+      railBody.replaceChildren(t.content.cloneNode(true));
+      splitAll(railBody);
+      requestAnimationFrame(() => requestAnimationFrame(() =>
+        $$('[data-split],[data-fade]', railBody).forEach(el => el.classList.add('in'))));
+    };
+    if (instant || !railBody.childElementCount) return fill();
+    railBody.classList.add('out');
+    swapTimer = setTimeout(fill, 420);
+  }
+
+  /* ---------- reveal on scroll ---------- */
+  const io = new IntersectionObserver(entries => entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('in');
+    if (e.target.dataset.count) countUp(e.target);
+    io.unobserve(e.target);
+  }), { rootMargin: '0px 0px -12% 0px', threshold: 0.05 });
+
+  function countUp(el) {
+    const to = +el.dataset.count, suf = el.dataset.suffix || '', t0 = performance.now(), dur = reduce ? 1 : 1400;
+    const tick = now => {
+      const p = Math.min(1, (now - t0) / dur), v = Math.round(to * (1 - Math.pow(1 - p, 3)));
+      el.textContent = v + suf;
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  /* ---------- activities switcher ---------- */
+  $$('[data-acts]').forEach(w => {
+    const btns = $$('.act-list button', w), panels = $$('.act-panel', w), list = $('.act-list', w);
+    const mark = document.createElement('span'); mark.className = 'act-mark'; list.append(mark);
+    const set = i => {
+      btns.forEach((b, k) => b.classList.toggle('on', k === i));
+      panels.forEach((p, k) => p.classList.toggle('on', k === i));
+      const b = btns[i];
+      mark.style.height = b.offsetHeight + 'px';
+      mark.style.transform = `translateY(${b.offsetTop}px)`;
+    };
+    btns.forEach((b, i) => {
+      b.addEventListener('mouseenter', () => matchMedia('(hover:hover)').matches && set(i));
+      b.addEventListener('click', () => set(i));
+      b.addEventListener('focus', () => set(i));
+    });
+    set(0);
+    w._set = () => set(btns.findIndex(b => b.classList.contains('on')));
+  });
+
+  /* ---------- timeline (night by night) ---------- */
+  const nights = [
+    ['20','capetown'],['21','capetown'],['22','capetown'],
+    ['23','huntshoek'],['24','huntshoek'],['25','huntshoek'],
+    ['26','mdumbi'],['27','mdumbi'],['28','mdumbi'],
+    ['29','tbc'],['30','tbc'],['31','tbc'],['1','tbc'],['2','back'],
+    ['3','back'],['4','back'],['5','fly']
+  ];
+  const tl = $('#timeline');
+  nights.forEach(([d, id], n) => {
+    const c = id && id !== 'fly' ? tpl(id).dataset.bg : (id === 'fly' ? '#101712' : 'transparent');
+    const el = document.createElement('div');
+    el.className = 'day' + (id ? '' : ' gap');
+    el.style.setProperty('--c', c); el.style.setProperty('--n', n);
+    el.title = id ? (id === 'fly' ? '5 Jan: fly home' : `${d}: ${tpl(id).dataset.short}`) : `${d}: unaccounted for`;
+    el.innerHTML = `<i></i><small>${d}</small>`;
+    tl.append(el);
+  });
+  $('#legend').innerHTML = ['capetown','huntshoek','mdumbi','tbc'].map(id =>
+    `<span style="--c:${tpl(id).dataset.bg}">${esc(tpl(id).dataset.short)}</span>`).join('') +
+    `<span style="--c:#101712">Fly home</span>`;
+
+
+  /* ---------- the guide ---------- */
+  const GUIDE_LINES = {
+    tent: ["I'm your tour guide. I've never been anywhere. That's why I've got such a big map.", "Glamping is camping, but you're allowed to complain about it.", "Seventy percent tents. Thirty percent me pretending I'm fine with tents."],
+    capetown: ["Lion's Head is that way. I think. I'm a drawing, I don't get out much.", "Publik first. Navigation is a problem for sober me.", "Beach, wine, chaos. I've seen worse business plans. I've written them."],
+    huntshoek: ["The map just says 'bush'. Very helpful. Like a doctor who just says 'body'.", "If we see a leopard, I don't have to outrun it. I just have to outrun you.", "Christmas in the bush. Nobody can hear you open your presents. Or scream."],
+    mdumbi: ["Three days, no signal. Finally, a reason I didn't text back.", "I'll be on the beach explaining surfing. I've never surfed. That's never stopped me.", "Sunset, ocean, cold drink. I'm going to sneeze. I can feel it."],
+    tbc: ["Recalculating… oh, it's booked. Never mind. I knew that.", "I wasn't lost. I was 'exploring options'. Like a CEO. Or a dad at a braai.", "The map's still upside down. We found it anyway. I'm taking credit.", "New Year's on a wine farm. Hard to mess up. I'll find a way."],
+    back: ["Same road, backwards. Like a moonwalk, but with more padkos.", "Are we there yet? Short answer: no. Long answer: also no."],
+    goodbyes: ["I'm not crying. The map's damp. It's a very emotional map.", "Departures is just a room where adults pretend they've got something in their eye."],
+    rates: ["Don't look at me. I'm an illustration. I get paid in exposure.", "I've seen the numbers. I'm going to go lie down."],
+    yes: ["Go on. Click it. I've got a family. Well, a map.", "Yes is the big black one. I'm not allowed to say more. Legal."]
+  };
+
+  // the character, drawn as layered parts so each bit can move
+  const INK = '#221a14', SKIN = '#F8EDE7', TEAL = '#3E7B6C', MAP1 = '#A6C9D3', MAP2 = '#8EB6C3';
+  const tube = (d, w = 24) => `<path d="${d}" fill="none" stroke="${INK}" stroke-width="${w + 12}" stroke-linecap="round"/><path d="${d}" fill="none" stroke="${SKIN}" stroke-width="${w}" stroke-linecap="round"/>`;
+  const mx_ = [80, 128, 176, 224, 272, 320], mt = [322, 300, 326, 298, 324, 302], mb = [492, 470, 496, 468, 494, 472];
+  const panels = mx_.slice(0, 5).map((x, i) => `<polygon points="${x},${mt[i]} ${mx_[i + 1]},${mt[i + 1]} ${mx_[i + 1]},${mb[i + 1]} ${x},${mb[i]}" fill="${i % 2 ? MAP2 : MAP1}"/>`).join('');
+  const outline = `M${mx_.map((x, i) => `${x},${mt[i]}`).join(' L')} L${mx_.map((x, i) => `${x},${mb[i]}`).reverse().join(' L')} Z`;
+  const folds = mx_.slice(1, 5).map((x, i) => `M${x},${mt[i + 1]} L${x},${mb[i + 1]}`).join(' ');
+  const contour = (cx, cy, rx, ry) => `<ellipse cx="${cx}" cy="${cy}" rx="${rx}" ry="${ry}" fill="${TEAL}" stroke="${INK}" stroke-width="5"/><ellipse cx="${cx}" cy="${cy}" rx="${rx * .62}" ry="${ry * .58}" fill="none" stroke="${INK}" stroke-width="2.6"/><ellipse cx="${cx}" cy="${cy}" rx="${rx * .28}" ry="${ry * .24}" fill="none" stroke="${INK}" stroke-width="2.6"/>`;
+  const GUIDE_SVG = `<svg viewBox="0 0 400 520" aria-hidden="true"><g filter="url(#wobble)" stroke-linejoin="round" stroke-linecap="round">
+    <g class="g-pack">
+      <path d="M108 304 Q 98 268 130 262 L 160 262 Q 168 282 150 304 Z" fill="${TEAL}" stroke="${INK}" stroke-width="6"/>
+      <path d="M252 304 Q 262 270 292 270 Q 308 290 298 308 Z" fill="${TEAL}" stroke="${INK}" stroke-width="6"/>
+      <rect x="232" y="236" width="108" height="44" rx="22" fill="${TEAL}" stroke="${INK}" stroke-width="6"/>
+      <circle cx="318" cy="258" r="15" fill="none" stroke="${INK}" stroke-width="4"/>
+      <path d="M318 258 m-6 0 a6 6 0 1 1 6 6" fill="none" stroke="${INK}" stroke-width="3.5"/>
+    </g>
+    <path class="g-torso" d="M118 300 Q 200 282 282 300 Q 312 312 318 360 L 320 462 L 80 462 L 82 360 Q 88 312 118 300 Z" fill="${SKIN}" stroke="${INK}" stroke-width="6"/>
+    <path d="M140 300 L 162 300 L 170 340 L 148 340 Z M238 300 L 260 300 L 252 340 L 230 340 Z" fill="${TEAL}" stroke="${INK}" stroke-width="5"/>
+    <rect x="182" y="240" width="36" height="58" fill="${SKIN}"/>
+    <path d="M182 250 L 182 294 M218 250 L 218 294" stroke="${INK}" stroke-width="6" fill="none"/>
+    <path d="M174 297 Q 200 318 226 297" stroke="${INK}" stroke-width="6" fill="none"/>
+    <g class="g-armL">${tube('M118 316 Q 76 330 70 392')}</g>
+    <g class="g-armR">${tube('M282 316 Q 324 330 330 392')}</g>
+    <g class="g-mapW"><g class="g-map">
+      ${panels}
+      <g class="g-mapC">
+        ${contour(102, 360, 13, 20)}
+        <path d="M150 368 Q 160 350 172 366 Q 184 350 194 368 Q 184 392 172 398 Q 160 392 150 368 Z" fill="${TEAL}" stroke="${INK}" stroke-width="5"/>
+        ${contour(252, 346, 32, 15)}${contour(112, 446, 20, 24)}${contour(196, 452, 22, 16)}
+        <ellipse cx="292" cy="432" rx="18" ry="26" fill="${TEAL}" stroke="${INK}" stroke-width="5"/>
+        <path class="g-route" d="M96 344 C 96 384 140 380 135 410 S 170 470 200 428 S 232 388 262 402 S 304 420 300 382" fill="none" stroke="${INK}" stroke-width="4"/>
+        <circle cx="96" cy="338" r="6" fill="${MAP1}" stroke="${INK}" stroke-width="4"/><circle cx="300" cy="376" r="6" fill="${INK}"/>
+      </g>
+      <path d="${folds}" stroke="${INK}" stroke-width="5" fill="none"/>
+      <path d="${outline}" stroke="${INK}" stroke-width="6" fill="none"/>
+    </g></g>
+    <g class="g-handL"><path d="M62 392 Q 56 418 70 434 Q 86 446 100 434 Q 106 420 100 404 Q 92 388 74 386 Z" fill="${SKIN}" stroke="${INK}" stroke-width="6"/><path d="M92 400 L 106 398 M94 414 L 108 413 M92 428 L 103 428" stroke="${INK}" stroke-width="5"/></g>
+    <g class="g-handR"><path d="M338 392 Q 344 418 330 434 Q 314 446 300 434 Q 294 420 300 404 Q 308 388 326 386 Z" fill="${SKIN}" stroke="${INK}" stroke-width="6"/><path d="M308 400 L 294 398 M306 414 L 292 413 M308 428 L 297 428" stroke="${INK}" stroke-width="5"/></g>
+    <g class="g-wave">${tube('M282 316 Q 320 320 342 300')}
+      <g class="g-fore">${tube('M342 300 L 350 240')}
+        <path d="M335 232 Q 330 208 347 201 Q 366 198 371 215 Q 373 233 356 241 Z" fill="${SKIN}" stroke="${INK}" stroke-width="6"/>
+        <path d="M341 206 L 336 192 M352 201 L 351 186 M363 204 L 368 191 M371 220 L 382 214" stroke="${INK}" stroke-width="5"/>
+      </g>
+    </g>
+    <g class="g-headF"><g class="g-head">
+      <ellipse cx="200" cy="188" rx="56" ry="66" fill="${SKIN}" stroke="${INK}" stroke-width="6"/>
+      <path class="g-hair" d="M146 196 C 128 180 132 150 146 142 C 136 116 160 96 176 102 C 182 80 214 78 222 96 C 240 82 266 98 260 122 C 280 132 276 164 256 176 C 254 156 246 146 236 140 C 226 150 210 146 206 134 C 194 148 172 148 166 136 C 156 150 150 170 146 196 Z" fill="${SKIN}" stroke="${INK}" stroke-width="6"/>
+      <g class="g-eyes"><circle cx="182" cy="193" r="5.6" fill="${INK}"/><circle cx="222" cy="189" r="5.6" fill="${INK}"/></g>
+      <path d="M206 194 Q 198 211 202 221 Q 208 223 213 219" fill="none" stroke="${INK}" stroke-width="5"/>
+      <ellipse class="g-mouth" cx="204" cy="238" rx="4.5" ry="5.2" fill="${INK}"/>
+      <path class="g-smile" d="M189 232 Q 204 248 219 232" fill="none" stroke="${INK}" stroke-width="5"/>
+      <path class="g-frown" d="M192 242 Q 204 232 216 242" fill="none" stroke="${INK}" stroke-width="5"/>
+    </g></g>
+    <text class="g-q" x="270" y="118" font-family="Newsreader, serif" font-size="64" fill="${INK}">?</text>
+  </g></svg>`;
+  document.body.insertAdjacentHTML('beforeend', `<svg width="0" height="0" style="position:absolute" aria-hidden="true"><filter id="wobble" x="-5%" y="-5%" width="110%" height="110%"><feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" seed="7"/><feDisplacementMap in="SourceGraphic" scale="3.2"/></filter></svg>`);
+
+  const guides = [];
+  function makeGuide(el) {
+    el.innerHTML = `<div class="guide-clip"><div class="guide-pos"><div class="guide-bob">${GUIDE_SVG}</div></div></div><p class="bubble"></p>`;
+    el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', 'The tour guide. Tap for advice');
+    el.tabIndex = 0;
+    const g = { el, svg: $('svg', el), eyes: $('.g-eyes', el), head: $('.g-headF', el), bubble: $('.bubble', el), timer: 0, wt: 0, i: 0 };
+    g.say = (txt, ms = Math.max(3600, txt.length * 60)) => {
+      g.bubble.textContent = txt; g.bubble.classList.add('on');
+      clearTimeout(g.timer); g.timer = setTimeout(() => g.bubble.classList.remove('on'), ms);
+    };
+    g.react = cls => { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); };
+    g.wave = (ms = 2200) => { el.classList.add('waving'); clearTimeout(g.wt); g.wt = setTimeout(() => el.classList.remove('waving'), ms); };
+    el.addEventListener('animationend', e => {
+      if (e.animationName === 'headshake') el.classList.remove('shake');
+      if (e.animationName === 'jump') el.classList.remove('jump');
+    });
+    el.addEventListener('keydown', e => (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), el.click()));
+    guides.push(g);
+    return g;
+  }
+  // eyes follow the cursor; the head turns a little towards it too
+  function guideLook() {
+    if (reduce) return;
+    guides.forEach(g => {
+      const r = g.svg.getBoundingClientRect();
+      if (!r.width || r.bottom < 0 || r.top > innerHeight) return;
+      const ex = r.left + r.width * .505, ey = r.top + r.height * .365;
+      const dx = mx - ex, dy = my - ey, k = Math.min(1, Math.hypot(dx, dy) / 220), a = Math.atan2(dy, dx);
+      g.eyes.style.transform = `translate(${(Math.cos(a) * 10 * k).toFixed(2)}px,${(Math.sin(a) * 8 * k).toFixed(2)}px)`;
+      g.head.style.transform = `rotate(${Math.max(-7, Math.min(7, dx / 60)).toFixed(2)}deg)`;
+    });
+  }
+  const nextLine = (g, id) => { const L = GUIDE_LINES[id] || GUIDE_LINES.tent; g.say(L[g.i++ % L.length]); };
+
+  const railGuide = makeGuide($('#railGuide'));
+  let guideStop = 'tent', guideTimer;
+  railGuide.el.addEventListener('click', () => {
+    nextLine(railGuide, guideStop);
+    railGuide.i % 2 ? railGuide.wave() : railGuide.react('jump');
+  });
+  function guideOnStop(id) {
+    guideStop = id; railGuide.i = 0;
+    const el = railGuide.el;
+    railGuide.bubble.classList.remove('on'); clearTimeout(railGuide.timer);
+    el.classList.add('duck');
+    clearTimeout(guideTimer);
+    guideTimer = setTimeout(() => {
+      el.classList.remove('duck');
+      // at the ask he 'walks over' to the main column, so leave the rail
+      el.classList.toggle('hidden', id === 'yes');
+      el.classList.toggle('lost', id === 'tbc');
+      if (id === 'yes') setTimeout(() => { askGuide.say(GUIDE_LINES.yes[0]); askGuide.wave(); }, 900);
+      else if (document.body.classList.contains('past-cover')) setTimeout(() => { nextLine(railGuide, id); if (id !== 'tbc') railGuide.wave(1600); }, 450);
+    }, 380);
+  }
+
+  const coverGuide = makeGuide($('#coverGuide'));
+  setTimeout(() => {
+    coverGuide.el.classList.remove('hidden');
+    setTimeout(() => { coverGuide.say('Right. Follow me. I know exactly where I\'m going.', 5000); coverGuide.wave(2600); }, 800);
+    if (!reduce) setInterval(() => scrollY < innerHeight * .6 && coverGuide.wave(1800), 8000);
+  }, reduce ? 0 : 1600);
+  coverGuide.el.addEventListener('click', () => $('#tent').scrollIntoView({ behavior: reduce ? 'auto' : 'smooth' }));
+
+  const askGuide = makeGuide($('#askGuide'));
+  askGuide.el.addEventListener('click', () => { nextLine(askGuide, 'yes'); askGuide.wave(); });
+
+  /* ---------- rates: sums + ZAR/GBP toggle ---------- */
+  (() => {
+    const GBP_RATE = 21.90;
+    const card = $('#rateCard'), fuel = $('#fuel');
+    if (!card) return;
+    const lp = +fuel.dataset.lper100, price = +fuel.dataset.price;
+    const legs = $$('tr[data-km]', fuel);
+    const km = legs.reduce((t, r) => t + +r.dataset.km, 0);
+    const litres = km * lp / 100;
+    legs.forEach(r => r.lastElementChild.dataset.zar = Math.round(+r.dataset.km * lp / 100 * price));
+    const fuelCost = Math.round(litres * price);
+    $('#fuelCost').dataset.zar = fuelCost;
+    $('[data-km]', card).textContent = `~${km.toLocaleString('en-ZA')} km`;
+    $('#fuelNote').textContent = `2015 Jeep Wrangler, ~${Math.round(litres)} litres at R${price.toFixed(2)}`;
+    const stay = $$('tbody td[data-zar]', card).filter(td => td.id !== 'fuelCost').reduce((t, td) => t + +td.dataset.zar, 0);
+    $('[data-sum="stay"]', card).dataset.zar = stay;
+    $('#grandTotal').dataset.zar = stay + fuelCost;
+    $('#eachTotal').dataset.zar = Math.round((stay + fuelCost) / 2);
+    const fmt = (zar, ccy) => ccy === 'GBP'
+      ? '£' + Math.round(zar / GBP_RATE).toLocaleString('en-GB')
+      : 'R' + Math.round(zar).toLocaleString('en-ZA').replace(/,/g, ' ');
+    const cells = $$('[data-zar]', $('#rates'));
+    function render(ccy, animate) {
+      cells.forEach(td => {
+        const v = +td.dataset.zar;
+        const txt = v === 0 && td.dataset.free ? td.dataset.free : fmt(v, ccy);
+        if (!td.firstElementChild) td.innerHTML = '<span class="num"></span>';
+        const n = td.firstElementChild;
+        if (!animate || reduce) { n.textContent = txt; return; }
+        n.classList.add('flip');
+        setTimeout(() => { n.textContent = txt; n.classList.remove('flip'); }, 180);
+      });
+    }
+    const toggle = $('.ccy');
+    $$('button', toggle).forEach(b => b.addEventListener('click', () => {
+      const ccy = b.dataset.ccy;
+      $$('button', toggle).forEach(x => x.setAttribute('aria-pressed', String(x === b)));
+      toggle.classList.toggle('gbp', ccy === 'GBP');
+      render(ccy, true);
+    }));
+    render('ZAR', false);
+  })();
+
+  /* ---------- the ask ---------- */
+  const noBtn = $('#noBtn'), yesBtn = $('#yesBtn'), btns = $('#askBtns');
+  const noLines = ['No', 'Nice try', 'Still no?', 'Be serious', 'Fine. Yes.'];
+  let dodges = 0;
+  function dodge(e) {
+    if (dodges >= noLines.length - 1) return;
+    e && e.preventDefault();
+    dodges++;
+    noBtn.textContent = noLines[dodges];
+    askGuide.react('shake'); askGuide.say(['That button\'s decorative.', 'Bold. Wrong, but bold.', 'I\'ve seen this movie. You say yes.', 'Fine. I\'ll just stand here. Emotionally.'][Math.min(dodges - 1, 3)], 2600);
+    const W = btns.clientWidth - noBtn.offsetWidth, H = btns.clientHeight - noBtn.offsetHeight;
+    noBtn.style.left = Math.max(0, Math.random() * W) + 'px';
+    noBtn.style.top = Math.max(0, Math.random() * H) + 'px';
+    if (dodges === noLines.length - 1) { noBtn.classList.add('btn-yes'); noBtn.style.background = 'var(--ink)'; noBtn.style.color = '#fff'; }
+  }
+  noBtn.addEventListener('mouseenter', dodge);
+  noBtn.addEventListener('touchstart', dodge, { passive: false });
+  noBtn.addEventListener('click', e => dodges >= noLines.length - 1 ? sayYes() : dodge(e));
+  yesBtn.addEventListener('click', sayYes);
+  function sayYes() {
+    yesBtn.textContent = 'Signed. Sealed. Glamping.';
+    askGuide.react('jump'); askGuide.wave(5000); askGuide.say('Excellent decision. Pack a jumper. Lower your expectations.', 6000);
+    noBtn.style.opacity = '0'; noBtn.style.pointerEvents = 'none';
+    if (reduce) return;
+    const box = document.createElement('div'); box.className = 'confetti';
+    const cols = order.map(id => tpl(id).dataset.bg);
+    for (let i = 0; i < 90; i++) {
+      const t = document.createElement('i');
+      t.style.left = Math.random() * 100 + 'vw';
+      t.style.setProperty('--c', cols[i % cols.length]);
+      t.style.setProperty('--x', (Math.random() * 200 - 100) + 'px');
+      t.style.setProperty('--r', (Math.random() * 720 - 360) + 'deg');
+      t.style.setProperty('--t', (2.2 + Math.random() * 2) + 's');
+      t.style.animationDelay = Math.random() * .6 + 's';
+      box.append(t);
+    }
+    document.body.append(box);
+    setTimeout(() => box.remove(), 5200);
+  }
+
+  /* ---------- menu ---------- */
+  const menu = $('#menu'), menuBtn = $('#menuBtn');
+  function openMenu() { menu.classList.add('open'); menuBtn.setAttribute('aria-expanded', 'true'); $$('.li', menu).forEach(l => l.classList.add('in')); }
+  function closeMenu() { menu.classList.remove('open'); menuBtn.setAttribute('aria-expanded', 'false'); $$('.li', menu).forEach(l => l.classList.remove('in')); }
+  menuBtn.addEventListener('click', openMenu);
+  $('#menuClose').addEventListener('click', closeMenu);
+  addEventListener('keydown', e => e.key === 'Escape' && closeMenu());
+
+  /* ---------- cursor orb ---------- */
+  const cur = $('#cursor');
+  let mx = -100, my = -100, cx = mx, cy = my;
+  addEventListener('pointermove', e => {
+    if (e.pointerType !== 'mouse') return;
+    mx = e.clientX; my = e.clientY; cur.classList.add('on');
+    if (!reduce) {
+      const r = logo.getBoundingClientRect(), dx = mx - (r.left + r.width / 2), dy = my - (r.top + r.height * .55);
+      const k = Math.min(1, Math.hypot(dx, dy) / 300), ang = Math.atan2(dy, dx);
+      look.style.transform = `translate(${(Math.cos(ang) * 24 * k).toFixed(1)}px,${(Math.sin(ang) * 18 * k).toFixed(1)}px)`;
+    }
+    cur.classList.toggle('big', !!e.target.closest('a,button,.guide'));
+    guideLook();
+  });
+  document.addEventListener('pointerleave', () => cur.classList.remove('on'));
+  (function loop() {
+    cx += (mx - cx) * .2; cy += (my - cy) * .2;
+    cur.style.transform = `translate3d(${cx}px,${cy}px,0)`;
+    requestAnimationFrame(loop);
+  })();
+
+  /* ---------- scroll: active rail, header, divider parallax ---------- */
+  const header = $('#header'), cover = $('.cover'), sections = $$('.slide[data-rail]'), dividers = $$('.divider .img');
+  let lastY = scrollY;
+  function onScroll() {
+    const y = scrollY, vh = innerHeight;
+    const past = y > cover.offsetHeight - 60;
+    if (past && !document.body.classList.contains('past-cover')) setTimeout(() => current !== 'yes' && nextLine(railGuide, current), 900);
+    document.body.classList.toggle('past-cover', past);
+    let active = sections[0];
+    for (const s of sections) if (s.getBoundingClientRect().top <= vh * .5) active = s;
+    setRail(active.dataset.rail);
+    if (!reduce) dividers.forEach(d => {
+      const r = d.getBoundingClientRect();
+      if (r.bottom < 0 || r.top > vh) return;
+      d.style.setProperty('--py', ((r.top + r.height / 2 - vh / 2) * -0.08).toFixed(1) + 'px');
+    });
+  }
+
+  /* ---------- boot ---------- */
+  function boot() {
+    $$('figure.img[data-src]').forEach(hydrateImg);
+    splitAll();
+    setRail('tent', true);
+    $$('[data-split],[data-fade],.timeline,[data-count]').forEach(el => io.observe(el));
+    // clipped images never "intersect", so watch their parent instead
+    const imgIO = new IntersectionObserver(entries => entries.forEach(e => {
+      if (!e.isIntersecting) return;
+      e.target._imgs.forEach(i => i.classList.add('in'));
+      imgIO.unobserve(e.target);
+    }), { rootMargin: '0px 0px -10% 0px', threshold: 0.05 });
+    $$('.img').forEach(img => {
+      const p = img.parentElement;
+      if (!p._imgs) { p._imgs = []; imgIO.observe(p); }
+      p._imgs.push(img);
+    });
+    requestAnimationFrame(() => {
+      cover.classList.add('in');
+      $$('[data-split],[data-fade]', cover).forEach(el => el.classList.add('in'));
+    });
+    onScroll();
+    addEventListener('scroll', () => requestAnimationFrame(onScroll), { passive: true });
+    let rt;
+    addEventListener('resize', () => {
+      clearTimeout(rt);
+      rt = setTimeout(() => {
+        $$('[data-split]').forEach(el => { const was = el.classList.contains('in'); split(el); if (was) el.classList.add('in'); });
+        $$('[data-acts]').forEach(w => w._set && w._set());
+      }, 150);
+    });
+  }
+  (document.fonts ? document.fonts.ready : Promise.resolve()).then(boot);
+})();
+</script>
+</body>
+</html>
